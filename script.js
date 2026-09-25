@@ -1,41 +1,45 @@
-// 1. Inicialización Fila y Centrada en Costa Rica
+// 1. Inicializar el mapa centrado en Costa Rica
 const map = L.map('map', {
   center: [9.7489, -83.7534],
-  zoom: 8,
-  zoomControl: true
+  zoom: 8
 });
 
 // 2. Capa base OpenStreetMap
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
   attribution: '© OpenStreetMap'
 }).addTo(map);
 
-// Forzar actualización del tamaño del contenedor tras cargar la página
-window.addEventListener('load', () => {
-  setTimeout(() => {
-    map.invalidateSize();
-  }, 300);
-});
+// Grupos de capas para encender/apagar
+const capaTerritorios = L.layerGroup().addTo(map);
+const capaPuntos = L.layerGroup().addTo(map);
 
-// Variable para controlar los estilos
-let geojsonLayer;
+// 3. Añadir el selector de capas arriba a la derecha
+const baseMaps = {
+  "Mapa Base (OpenStreetMap)": osmLayer
+};
 
-// --- 3. CARGAR TERRITORIOS INDÍGENAS ---
+const overlayMaps = {
+  "Territorios Indígenas": capaTerritorios,
+  "Puntos GPS / Visitas": capaPuntos
+};
+
+L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
+
+
+// --- 4. CARGAR TERRITORIOS INDÍGENAS ---
 fetch('datos/territorios.geojson')
   .then(response => {
-    if (!response.ok) throw new Error('No se pudo cargar territorios.geojson');
+    if (!response.ok) throw new Error('No se encontró territorios.geojson');
     return response.json();
   })
   .then(data => {
-    console.log('✅ Datos de Territorios recibidos:', data);
-
-    geojsonLayer = L.geoJSON(data, {
+    const territoriosGeoJSON = L.geoJSON(data, {
       style: {
         fillColor: '#0d9488',
         weight: 2,
-        color: '#ffffff',
-        fillOpacity: 0.6
+        color: '#042f2e',
+        fillOpacity: 0.5
       },
       onEachFeature: (feature, layer) => {
         layer.on({
@@ -43,36 +47,35 @@ fetch('datos/territorios.geojson')
             e.target.setStyle({ weight: 4, color: '#f59e0b', fillOpacity: 0.8 });
           },
           mouseout: (e) => {
-            if (geojsonLayer) geojsonLayer.resetStyle(e.target);
+            territoriosGeoJSON.resetStyle(e.target);
           },
           click: (e) => {
             const props = feature.properties || {};
-            const nombre = props.NOMBRE || props.nombre || props.TERRITORIO || props.territorio || 'Territorio Indígena';
-            const area = props.AREA || props.area || props.HECTARES || props.hectareas || 'N/D';
+            // Intenta leer diferentes posibles nombres de columna
+            const nombre = props.NOMBRE || props.nombre || props.TERRITORIO || props.territorio || props.NOM_TERR || 'Territorio Indígena';
+            const area = props.AREA || props.area || props.HECTARES || props.hectareas || props.AREA_HA || 'N/D';
 
             document.getElementById('info-nombre').textContent = nombre;
             document.getElementById('info-area').textContent = area;
           }
         });
       }
-    }).addTo(map);
+    });
 
-    // Recalcular tamaño de pantalla para evitar distorsiones
-    map.invalidateSize();
+    // Agregar al grupo de capas
+    capaTerritorios.addLayer(territoriosGeoJSON);
   })
-  .catch(err => console.error('❌ Error en Territorios:', err));
+  .catch(err => console.error('Error al cargar Territorios:', err));
 
 
-// --- 4. CARGAR PUNTOS GPS ---
+// --- 5. CARGAR PUNTOS GPS ---
 fetch('datos/puntos.geojson')
   .then(response => {
-    if (!response.ok) throw new Error('No se pudo cargar puntos.geojson');
+    if (!response.ok) throw new Error('No se encontró puntos.geojson');
     return response.json();
   })
   .then(data => {
-    console.log('✅ Datos de Puntos recibidos:', data);
-
-    L.geoJSON(data, {
+    const puntosGeoJSON = L.geoJSON(data, {
       onEachFeature: (feature, layer) => {
         const props = feature.properties || {};
         let popupText = '<b>Punto GPS / Visita</b><br><hr>';
@@ -83,6 +86,9 @@ fetch('datos/puntos.geojson')
 
         layer.bindPopup(popupText);
       }
-    }).addTo(map);
+    });
+
+    // Agregar al grupo de capas
+    capaPuntos.addLayer(puntosGeoJSON);
   })
-  .catch(err => console.error('❌ Error en Puntos GPS:', err));
+  .catch(err => console.error('Error al cargar Puntos:', err));
