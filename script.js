@@ -1,23 +1,35 @@
-// 1. Inicializar el mapa centrado exactamente en Costa Rica (Coordenadas [9.7489, -83.7534], Zoom 8)
-const map = L.map('map').setView([9.7489, -83.7534], 8);
+// 1. Inicialización Fila y Centrada en Costa Rica
+const map = L.map('map', {
+  center: [9.7489, -83.7534],
+  zoom: 8,
+  zoomControl: true
+});
 
-// 2. Cargar capa base de OpenStreetMap
+// 2. Capa base OpenStreetMap
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
   attribution: '© OpenStreetMap'
 }).addTo(map);
 
-// Forzar a Leaflet a recalcular el tamaño del contenedor del mapa
-setTimeout(() => {
-  map.invalidateSize();
-}, 500);
+// Forzar actualización del tamaño del contenedor tras cargar la página
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    map.invalidateSize();
+  }, 300);
+});
 
+// Variable para controlar los estilos
 let geojsonLayer;
 
 // --- 3. CARGAR TERRITORIOS INDÍGENAS ---
 fetch('datos/territorios.geojson')
-  .then(response => response.json())
+  .then(response => {
+    if (!response.ok) throw new Error('No se pudo cargar territorios.geojson');
+    return response.json();
+  })
   .then(data => {
+    console.log('✅ Datos de Territorios recibidos:', data);
+
     geojsonLayer = L.geoJSON(data, {
       style: {
         fillColor: '#0d9488',
@@ -31,12 +43,12 @@ fetch('datos/territorios.geojson')
             e.target.setStyle({ weight: 4, color: '#f59e0b', fillOpacity: 0.8 });
           },
           mouseout: (e) => {
-            geojsonLayer.resetStyle(e.target);
+            if (geojsonLayer) geojsonLayer.resetStyle(e.target);
           },
           click: (e) => {
-            const props = feature.properties;
+            const props = feature.properties || {};
             const nombre = props.NOMBRE || props.nombre || props.TERRITORIO || props.territorio || 'Territorio Indígena';
-            const area = props.AREA || props.area || props.HECTARES || '0';
+            const area = props.AREA || props.area || props.HECTARES || props.hectareas || 'N/D';
 
             document.getElementById('info-nombre').textContent = nombre;
             document.getElementById('info-area').textContent = area;
@@ -45,21 +57,24 @@ fetch('datos/territorios.geojson')
       }
     }).addTo(map);
 
-    // Encuadrar automáticamente el zoom sobre los territorios
-    if (geojsonLayer.getBounds().isValid()) {
-      map.fitBounds(geojsonLayer.getBounds());
-    }
+    // Recalcular tamaño de pantalla para evitar distorsiones
+    map.invalidateSize();
   })
-  .catch(err => console.error('Error cargando territorios:', err));
+  .catch(err => console.error('❌ Error en Territorios:', err));
 
 
 // --- 4. CARGAR PUNTOS GPS ---
 fetch('datos/puntos.geojson')
-  .then(response => response.json())
+  .then(response => {
+    if (!response.ok) throw new Error('No se pudo cargar puntos.geojson');
+    return response.json();
+  })
   .then(data => {
+    console.log('✅ Datos de Puntos recibidos:', data);
+
     L.geoJSON(data, {
       onEachFeature: (feature, layer) => {
-        const props = feature.properties;
+        const props = feature.properties || {};
         let popupText = '<b>Punto GPS / Visita</b><br><hr>';
 
         for (let clave in props) {
@@ -70,4 +85,4 @@ fetch('datos/puntos.geojson')
       }
     }).addTo(map);
   })
-  .catch(err => console.error('Error cargando puntos:', err));
+  .catch(err => console.error('❌ Error en Puntos GPS:', err));
