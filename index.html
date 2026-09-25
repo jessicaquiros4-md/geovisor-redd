@@ -3,17 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Geovisor Interactivo</title>
+  <title>Geovisor REDD+ - Territorios Indígenas</title>
+
+  <!-- Ignorar búsqueda de favicon para limpiar la consola -->
+  <link rel="icon" href="data:,">
+
+  <!-- Hoja de Estilos de Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <!-- Hoja de Estilos Propia -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
   <header>
-    <h1>Geovisor de Territorios Indígenas</h1>
+    <h1>Geovisor REDD+ - Territorios Indígenas y Visitas</h1>
   </header>
 
   <div class="main-container">
+
+    <!-- Panel Lateral -->
     <aside class="sidebar">
       <h2>Información del Territorio</h2>
 
@@ -24,14 +33,19 @@
 
       <div class="card">
         <h3>Área Efectiva</h3>
-        <p><span id="info-area">-</span> hectáreas</p>
+        <p><span id="info-area" class="metric">-</span> hectáreas</p>
       </div>
     </aside>
 
+    <!-- Contenedor del Mapa -->
     <main id="map"></main>
+
   </div>
 
+  <!-- Script de Leaflet (DEBE IR ANTES DE script.js) -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Tu código JavaScript -->
   <script src="script.js"></script>
 </body>
 </html>
