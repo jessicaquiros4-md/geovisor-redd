@@ -1,0 +1,44 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+header {
+  background-color: #1e293b;
+  color: white;
+  padding: 15px 20px;
+}
+
+.main-container {
+  display: flex;
+  flex: 1;
+}
+
+.sidebar {
+  width: 300px;
+  background-color: #f1f5f9;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.card {
+  background-color: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+#map {
+  flex: 1;
+  height: 100%;
+}
