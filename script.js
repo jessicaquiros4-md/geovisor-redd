@@ -59,27 +59,28 @@ fetch('datos/territorios.geojson')
 
       // Crear capa única para este territorio
       const capaTerritorio = L.geoJSON(feature, {
-        style: {
-          fillColor: '#0d9488',
-          weight: 2,
-          color: '#ffffff',
-          fillOpacity: 0.5
-        },
-        onEachFeature: (feat, layer) => {
-          layer.on({
-            mouseover: (e) => {
-              e.target.setStyle({ weight: 4, color: '#f59e0b', fillOpacity: 0.8 });
-            },
-            mouseout: (e) => {
-              capaTerritorio.resetStyle(e.target);
-            },
-            click: (e) => {
-              document.getElementById('info-nombre').textContent = nombreTerritorio;
-              document.getElementById('info-area').textContent = areaTerritorio;
-            }
-          });
-        }
-      });
+  style: {
+    fillColor: '#0d9488',
+    fillOpacity: 0.4,
+    color: '#042f2e',       // Color del borde (Verde oscuro)
+    weight: 3,              // Grosor de la línea
+    opacity: 1              // Opacidad de la línea del borde
+  },
+  onEachFeature: (feat, layer) => {
+    layer.on({
+      mouseover: (e) => {
+        e.target.setStyle({ weight: 5, color: '#f59e0b', fillOpacity: 0.7 });
+      },
+      mouseout: (e) => {
+        capaTerritorio.resetStyle(e.target);
+      },
+      click: (e) => {
+        document.getElementById('info-nombre').textContent = nombreTerritorio;
+        document.getElementById('info-area').textContent = areaTerritorio;
+      }
+    });
+  }
+});
 
       // Añadir la capa al grupo en el mapa
       capaTerritorio.addTo(capasIndividualesTerritorios);
