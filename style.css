@@ -1,8 +1,71 @@
+/* Configuración general de la pantalla */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  font-family: Arial, sans-serif;
+}
+
+/* El mapa ocupa toda la pantalla de fondo */
+#map {
+  width: 100%;
+  height: 100vh;
+}
+
+/* Panel lateral flotante a la izquierda */
+.sidebar {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 360px;
+  max-height: calc(100vh - 20px);
+  background-color: #ffffff;
+  z-index: 1000;
+  padding: 15px;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  overflow-y: auto;
+}
+
+.sidebar h2 {
+  font-size: 1.2rem;
+  color: #0f172a;
+  margin-top: 0;
+  margin-bottom: 12px;
+  border-bottom: 2px solid #0d9488;
+  padding-bottom: 6px;
+}
+
+/* Tarjetas de contenido internas */
+.card {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.card small {
+  display: block;
+  font-size: 0.7rem;
+  color: #64748b;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  margin-bottom: 3px;
+}
+
+.card h3 {
+  font-size: 1.05rem;
+  color: #0d9488;
+  margin: 0;
+}
+
 /* Contenedor para las nubes de información horizontal */
 .nubes-container {
   display: flex;
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .badge-card {
@@ -15,36 +78,36 @@
 }
 
 .badge-card small {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #64748b;
   font-weight: bold;
 }
 
 .badge-card span {
   display: block;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: bold;
   color: #0d9488;
   margin-top: 2px;
 }
 
-/* Estilo compacto para la tabla de años en el panel */
+/* Tabla de áreas por año en el panel */
 .tabla-anios {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 8px;
+  margin-top: 6px;
   font-size: 0.85rem;
 }
 
 .tabla-anios th, .tabla-anios td {
-  padding: 5px 6px;
+  padding: 4px 6px;
   text-align: left;
   border-bottom: 1px solid #f1f5f9;
 }
 
 .tabla-anios th {
-  background-color: #f8fafc;
-  color: #64748b;
+  background-color: #f1f5f9;
+  color: #475569;
   font-weight: 600;
 }
 
