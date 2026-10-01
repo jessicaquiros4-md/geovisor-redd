@@ -1,66 +1,54 @@
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-html, body {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
-header {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 60px;
-  background-color: #1e293b;
-  color: white;
-  padding: 15px 20px;
-  z-index: 1000;
-}
-
-.main-container {
-  position: absolute;
-  top: 60px;
-  bottom: 0;
-  left: 0;
-  right: 0;
+/* Contenedor para las nubes de información horizontal */
+.nubes-container {
   display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
-.sidebar {
-  width: 320px;
-  background-color: #f8fafc;
-  border-right: 1px solid #cbd5e1;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  overflow-y: auto;
-}
-
-.card {
-  background-color: white;
-  padding: 15px;
+.badge-card {
+  flex: 1;
+  background-color: #f1f5f9;
   border-radius: 8px;
+  padding: 8px;
+  text-align: center;
   border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
-.metric {
-  font-size: 1.4rem;
+.badge-card small {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: bold;
+}
+
+.badge-card span {
+  display: block;
+  font-size: 1rem;
   font-weight: bold;
   color: #0d9488;
+  margin-top: 2px;
 }
 
-/* El mapa ocupará exactamente todo el espacio restante de la pantalla */
-#map {
-  flex: 1;
+/* Estilo compacto para la tabla de años en el panel */
+.tabla-anios {
   width: 100%;
-  height: 100%;
-  background-color: #e5e3df;
+  border-collapse: collapse;
+  margin-top: 8px;
+  font-size: 0.85rem;
+}
+
+.tabla-anios th, .tabla-anios td {
+  padding: 5px 6px;
+  text-align: left;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.tabla-anios th {
+  background-color: #f8fafc;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.tabla-anios td:last-child {
+  text-align: right;
+  font-weight: 500;
 }
