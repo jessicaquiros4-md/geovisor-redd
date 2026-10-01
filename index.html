@@ -1,51 +1,51 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Geovisor REDD+ - Territorios Indígenas</title>
+<div id="sidebar" class="sidebar">
+  <h2>Información del Territorio</h2>
 
-  <!-- Ignorar búsqueda de favicon para limpiar la consola -->
-  <link rel="icon" href="data:,">
-
-  <!-- Hoja de Estilos de Leaflet -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  
-  <!-- Hoja de Estilos Propia -->
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-
-  <header>
-    <h1>Geovisor REDD+ - Territorios Indígenas y Visitas</h1>
-  </header>
-
-  <div class="main-container">
-
-    <!-- Panel Lateral -->
-    <aside class="sidebar">
-      <h2>Información del Territorio</h2>
-
-      <div class="card">
-        <h3>Territorio Seleccionado</h3>
-        <p id="info-nombre">Haz clic en un territorio en el mapa</p>
-      </div>
-
-      <div class="card">
-        <h3>Área Efectiva</h3>
-        <p><span id="info-area" class="metric">-</span> hectáreas</p>
-      </div>
-    </aside>
-
-    <!-- Contenedor del Mapa -->
-    <main id="map"></main>
-
+  <!-- Territorio Seleccionado -->
+  <div class="card">
+    <small>TERRITORIO SELECCIONADO</small>
+    <h3 id="info-nombre">Haz clic en un territorio</h3>
   </div>
 
-  <!-- Script de Leaflet (DEBE IR ANTES DE script.js) -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Nubes de Información (Año Contrato y Bloque) -->
+  <div class="nubes-container">
+    <div class="badge-card">
+      <small>AÑO CONTRATO</small>
+      <span id="info-anio">-</span>
+    </div>
+    <div class="badge-card">
+      <small>BLOQUE</small>
+      <span id="info-bloque">-</span>
+    </div>
+  </div>
 
-  <!-- Tu código JavaScript -->
-  <script src="script.js"></script>
-</body>
-</html>
+  <!-- Clasificación y Decreto -->
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+      <span><strong>Clasificación:</strong> <span id="info-clasif">-</span></span>
+      <span><strong>Decreto:</strong> <span id="info-decreto">-</span></span>
+    </div>
+  </div>
+
+  <!-- Tabla de Área Efectiva por Año (2018 - 2024) -->
+  <div class="card">
+    <small>ÁREA EFECTIVA APROBADA POR AÑO (HA)</small>
+    <table class="tabla-anios">
+      <thead>
+        <tr>
+          <th>Año</th>
+          <th>Área (ha)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>2018</td><td id="ae-2018">-</td></tr>
+        <tr><td>2019</td><td id="ae-2019">-</td></tr>
+        <tr><td>2020</td><td id="ae-2020">-</td></tr>
+        <tr><td>2021</td><td id="ae-2021">-</td></tr>
+        <tr><td>2022</td><td id="ae-2022">-</td></tr>
+        <tr><td>2023</td><td id="ae-2023">-</td></tr>
+        <tr><td>2024</td><td id="ae-2024">-</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
