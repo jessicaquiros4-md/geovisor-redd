@@ -15,103 +15,130 @@ html, body {
 
 /* Panel lateral flotante a la izquierda */
 .sidebar {
+  .sidebar {
   position: absolute;
-  top: 10px;
-  left: 10px;
-  width: 360px;
-  max-height: calc(100vh - 20px);
-  background-color: #ffffff;
+  top: 15px;
+  left: 15px;
+  width: 380px;
+  max-height: calc(100vh - 30px);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
   z-index: 1000;
-  padding: 15px;
-  border-radius: 10px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
   overflow-y: auto;
+  font-family: 'Inter', Arial, sans-serif;
+  color: #1e293b;
 }
 
-.sidebar h2 {
-  font-size: 1.2rem;
-  color: #0f172a;
-  margin-top: 0;
-  margin-bottom: 12px;
-  border-bottom: 2px solid #0d9488;
-  padding-bottom: 6px;
+.header-territorio {
+  margin-bottom: 15px;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 10px;
 }
 
-/* Tarjetas de contenido internas */
-.card {
-  background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 10px 12px;
-  margin-bottom: 10px;
-}
-
-.card small {
-  display: block;
-  font-size: 0.7rem;
+.header-territorio small {
+  font-size: 0.65rem;
+  font-weight: 700;
   color: #64748b;
-  font-weight: bold;
-  letter-spacing: 0.5px;
-  margin-bottom: 3px;
+  letter-spacing: 1px;
 }
 
-.card h3 {
-  font-size: 1.05rem;
-  color: #0d9488;
-  margin: 0;
+.header-territorio h2 {
+  font-size: 1.25rem;
+  color: #0f766e;
+  margin: 4px 0 8px 0;
 }
 
-/* Contenedor para las nubes de información horizontal */
-.nubes-container {
+/* Etiquetas originales CREF / PAFT */
+.badges-programa {
   display: flex;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 8px;
+  margin-top: 6px;
 }
 
-.badge-card {
-  flex: 1;
+.tag-programa {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tag-active {
+  background-color: #ccfbf1;
+  color: #0f766e;
+  border: 1px solid #99f6e4;
+}
+
+.tag-inactive {
   background-color: #f1f5f9;
-  border-radius: 8px;
-  padding: 8px;
-  text-align: center;
+  color: #94a3b8;
   border: 1px solid #e2e8f0;
 }
 
-.badge-card small {
-  font-size: 0.7rem;
-  color: #64748b;
-  font-weight: bold;
+/* Tarjetas internas de información */
+.card-info {
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
 }
 
-.badge-card span {
+.label-titulo {
   display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+  letter-spacing: 0.5px;
+}
+
+.valor-destacado {
   font-size: 0.95rem;
-  font-weight: bold;
-  color: #0d9488;
-  margin-top: 2px;
-}
-
-/* Tabla de áreas por año en el panel */
-.tabla-anios {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 6px;
-  font-size: 0.85rem;
-}
-
-.tabla-anios th, .tabla-anios td {
-  padding: 4px 6px;
-  text-align: left;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.tabla-anios th {
-  background-color: #f1f5f9;
-  color: #475569;
   font-weight: 600;
+  color: #0f172a;
 }
 
-.tabla-anios td:last-child {
-  text-align: right;
+.grid-detalles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.valor-texto {
+  font-size: 0.9rem;
+  color: #334155;
   font-weight: 500;
+}
+
+/* Sección de Desembolsos */
+.desembolsos-flex {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  text-align: center;
+  margin-top: 4px;
+}
+
+.desembolsos-flex small {
+  font-size: 0.65rem;
+  color: #64748b;
+}
+
+.desembolsos-flex span {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0d9488;
+}
+
+.divider-v {
+  width: 1px;
+  height: 25px;
+  background-color: #cbd5e1;
 }
