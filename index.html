@@ -15,65 +15,66 @@
 
   <!-- Panel Lateral Izquierdo -->
   <div class="sidebar">
-  <div class="header-territorio">
-    <small>TERRITORIO SELECCIONADO</small>
-    <h2 id="info-nombre">Haz clic en un territorio</h2>
-    
-    <!-- Etiquetas originales para CREF y PAFT -->
-    <div class="badges-programa">
-      <span id="badge-cref" class="tag-programa tag-inactive">CREF: --</span>
-      <span id="badge-paft" class="tag-programa tag-inactive">PAFT: --</span>
+    <div class="header-territorio">
+      <small>TERRITORIO SELECCIONADO</small>
+      <h2 id="info-nombre">Haz clic en un territorio</h2>
+      
+      <!-- Etiquetas dinámicas para CREF y PAFT -->
+      <div class="badges-programa">
+        <span id="badge-cref" class="tag-programa tag-inactive">CREF: --</span>
+        <span id="badge-paft" class="tag-programa tag-inactive">PAFT: --</span>
+      </div>
     </div>
-  </div>
 
-  <!-- Decreto -->
-  <div class="card-info">
-    <span class="label-titulo">Decreto de Creación</span>
-    <span id="info-decreto" class="valor-destacado">-</span>
-  </div>
-
-  <!-- Bloque y Desembolsos en formato grid moderno -->
-  <div class="grid-detalles">
+    <!-- Decreto de Creación -->
     <div class="card-info">
-      <span class="label-titulo">Bloque</span>
-      <span id="info-bloque" class="valor-texto">-</span>
+      <span class="label-titulo">Decreto de Creación</span>
+      <span id="info-decreto" class="valor-destacado">-</span>
     </div>
+
+    <!-- Bloque y Clasificación -->
+    <div class="grid-detalles">
+      <div class="card-info">
+        <span class="label-titulo">Bloque</span>
+        <span id="info-bloque" class="valor-texto">-</span>
+      </div>
+      <div class="card-info">
+        <span class="label-titulo">Clasificación</span>
+        <span id="info-clasif" class="valor-texto">-</span>
+      </div>
+    </div>
+
+    <!-- Desembolsos REDD+ -->
+    <div class="card-info desembolsos-box">
+      <span class="label-titulo">Desembolsos REDD+</span>
+      <div class="desembolsos-flex">
+        <div><small>1.° Desembolso</small><span id="info-des1">-</span></div>
+        <div class="divider-v"></div>
+        <div><small>2.° Desembolso</small><span id="info-des2">-</span></div>
+      </div>
+    </div>
+
+    <!-- Tabla de Áreas Efectivas por Año -->
     <div class="card-info">
-      <span class="label-titulo">Clasificación</span>
-      <span id="info-clasif" class="valor-texto">-</span>
+      <span class="label-titulo">Área Efectiva Aprobada por Año (ha)</span>
+      <table class="tabla-anios">
+        <thead>
+          <tr><th>Año</th><th>Área (ha)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>2018</td><td id="ae-2018">-</td></tr>
+          <tr><td>2019</td><td id="ae-2019">-</td></tr>
+          <tr><td>2020</td><td id="ae-2020">-</td></tr>
+          <tr><td>2021</td><td id="ae-2021">-</td></tr>
+          <tr><td>2022</td><td id="ae-2022">-</td></tr>
+          <tr><td>2023</td><td id="ae-2023">-</td></tr>
+          <tr><td>2024</td><td id="ae-2024">-</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
-  <!-- Desembolsos -->
-  <div class="card-info desembolsos-box">
-    <span class="label-titulo">Desembolsos REDD+</span>
-    <div class="desembolsos-flex">
-      <div><small>1.° Desembolso</small><span id="info-des1">-</span></div>
-      <div class="divider-v"></div>
-      <div><small>2.° Desembolso</small><span id="info-des2">-</span></div>
-    </div>
-  </div>
-
-  <!-- Tabla de Áreas -->
-  <div class="card-info">
-    <span class="label-titulo">Área Efectiva Aprobada por Año (ha)</span>
-    <table class="tabla-anios">
-      <thead>
-        <tr><th>Año</th><th>Área (ha)</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>2018</td><td id="ae-2018">-</td></tr>
-        <tr><td>2019</td><td id="ae-2019">-</td></tr>
-        <tr><td>2020</td><td id="ae-2020">-</td></tr>
-        <tr><td>2021</td><td id="ae-2021">-</td></tr>
-        <tr><td>2022</td><td id="ae-2022">-</td></tr>
-        <tr><td>2023</td><td id="ae-2023">-</td></tr>
-        <tr><td>2024</td><td id="ae-2024">-</td></tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-  <!-- Contenedor principal del Mapa -->
+  <!-- Contenedor principal del Mapa (¡Vital para que aparezca!) -->
   <div id="map"></div>
 
   <!-- Leaflet JS -->
