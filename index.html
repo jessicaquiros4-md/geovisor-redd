@@ -14,58 +14,65 @@
 <body>
 
   <!-- Panel Lateral Izquierdo -->
-  <div id="sidebar" class="sidebar">
-    <h2>Información del Territorio</h2>
-
-    <!-- Territorio Seleccionado -->
-    <div class="card">
-      <small>TERRITORIO SELECCIONADO</small>
-      <h3 id="info-nombre">Haz clic en un territorio</h3>
-    </div>
-
-    <!-- Nubes de Información (Año Contrato y Bloque) -->
-    <div class="nubes-container">
-      <div class="badge-card">
-        <small>AÑO CONTRATO</small>
-        <span id="info-anio">-</span>
-      </div>
-      <div class="badge-card">
-        <small>BLOQUE</small>
-        <span id="info-bloque">-</span>
-      </div>
-    </div>
-
-    <!-- Clasificación y Decreto -->
-    <div class="card">
-      <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
-        <span><strong>Clasificación:</strong> <span id="info-clasif">-</span></span>
-        <span><strong>Decreto:</strong> <span id="info-decreto">-</span></span>
-      </div>
-    </div>
-
-    <!-- Tabla de Área Efectiva por Año (2018 - 2024) -->
-    <div class="card">
-      <small>ÁREA EFECTIVA APROBADA POR AÑO (HA)</small>
-      <table class="tabla-anios">
-        <thead>
-          <tr>
-            <th>Año</th>
-            <th>Área (ha)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td>2018</td><td id="ae-2018">-</td></tr>
-          <tr><td>2019</td><td id="ae-2019">-</td></tr>
-          <tr><td>2020</td><td id="ae-2020">-</td></tr>
-          <tr><td>2021</td><td id="ae-2021">-</td></tr>
-          <tr><td>2022</td><td id="ae-2022">-</td></tr>
-          <tr><td>2023</td><td id="ae-2023">-</td></tr>
-          <tr><td>2024</td><td id="ae-2024">-</td></tr>
-        </tbody>
-      </table>
+  <div class="sidebar">
+  <div class="header-territorio">
+    <small>TERRITORIO SELECCIONADO</small>
+    <h2 id="info-nombre">Haz clic en un territorio</h2>
+    
+    <!-- Etiquetas originales para CREF y PAFT -->
+    <div class="badges-programa">
+      <span id="badge-cref" class="tag-programa tag-inactive">CREF: --</span>
+      <span id="badge-paft" class="tag-programa tag-inactive">PAFT: --</span>
     </div>
   </div>
 
+  <!-- Decreto -->
+  <div class="card-info">
+    <span class="label-titulo">Decreto de Creación</span>
+    <span id="info-decreto" class="valor-destacado">-</span>
+  </div>
+
+  <!-- Bloque y Desembolsos en formato grid moderno -->
+  <div class="grid-detalles">
+    <div class="card-info">
+      <span class="label-titulo">Bloque</span>
+      <span id="info-bloque" class="valor-texto">-</span>
+    </div>
+    <div class="card-info">
+      <span class="label-titulo">Clasificación</span>
+      <span id="info-clasif" class="valor-texto">-</span>
+    </div>
+  </div>
+
+  <!-- Desembolsos -->
+  <div class="card-info desembolsos-box">
+    <span class="label-titulo">Desembolsos REDD+</span>
+    <div class="desembolsos-flex">
+      <div><small>1.° Desembolso</small><span id="info-des1">-</span></div>
+      <div class="divider-v"></div>
+      <div><small>2.° Desembolso</small><span id="info-des2">-</span></div>
+    </div>
+  </div>
+
+  <!-- Tabla de Áreas -->
+  <div class="card-info">
+    <span class="label-titulo">Área Efectiva Aprobada por Año (ha)</span>
+    <table class="tabla-anios">
+      <thead>
+        <tr><th>Año</th><th>Área (ha)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>2018</td><td id="ae-2018">-</td></tr>
+        <tr><td>2019</td><td id="ae-2019">-</td></tr>
+        <tr><td>2020</td><td id="ae-2020">-</td></tr>
+        <tr><td>2021</td><td id="ae-2021">-</td></tr>
+        <tr><td>2022</td><td id="ae-2022">-</td></tr>
+        <tr><td>2023</td><td id="ae-2023">-</td></tr>
+        <tr><td>2024</td><td id="ae-2024">-</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
   <!-- Contenedor principal del Mapa -->
   <div id="map"></div>
 
