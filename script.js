@@ -1,69 +1,46 @@
-// 1. Inicializar el mapa centrado en Costa Rica
-const map = L.map('map').setView([9.7489, -83.7534], 8);
+click: (e) => {
+  const props = feature.properties || {};
 
-// 2. Agregar capa base (OpenStreetMap)
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 19,
-  attribution: '&copy; OpenStreetMap contributors'
-}).addTo(map);
+  // 1. Nombre principal y año del territorio
+  document.getElementById('info-nombre').textContent = props.TERRITORIO || 'Territorio Indígena';
+  document.getElementById('info-anio').textContent = props.AÑO || props.ANO || 'N/D';
 
-// 3. Estilo para los territorios indígenas
-const estiloTerritorio = {
-  color: '#0d9488',
-  weight: 2,
-  fillColor: '#14b8a6',
-  fillOpacity: 0.4
-};
+  // 2. Lógica visual automática para CREF y PAFT basada en la columna "CLASIF"
+  const clasif = (props.CLASIF || '').toUpperCase();
+  const badgeCref = document.getElementById('badge-cref');
+  const badgePaft = document.getElementById('badge-paft');
 
-// 4. Cargar el archivo GeoJSON (Asegúrate de que la ruta 'datos/territorios.geojson' sea la correcta en tu repo)
-fetch('datos/territorios.geojson')
-  .then(response => {
-    if (!response.ok) {
-      throw new Error('No se pudo cargar el archivo GeoJSON');
-    }
-    return response.json();
-  })
-  .then(data => {
-    const capaTerritorios = L.geoJSON(data, {
-      style: estiloTerritorio,
-      onEachFeature: (feature, layer) => {
-        layer.on({
-          mouseover: (e) => {
-            const l = e.target;
-            l.setStyle({
-              weight: 3,
-              fillOpacity: 0.7
-            });
-          },
-          mouseout: (e) => {
-            capaTerritorios.resetStyle(e.target);
-          },
-          click: (e) => {
-            const props = feature.properties || {};
+  if (clasif.includes('CREF')) {
+    badgeCref.textContent = 'CREF: Sí';
+    badgeCref.className = 'tag-programa tag-active';
+  } else {
+    badgeCref.textContent = 'CREF: No';
+    badgeCref.className = 'tag-programa tag-inactive';
+  }
 
-            // 1. Textos principales y nubes
-            document.getElementById('info-nombre').textContent = props.TERRITORIO || 'Territorio Indígena';
-            document.getElementById('info-anio').textContent = props.AÑO || props.ANO || 'N/D';
-            document.getElementById('info-bloque').textContent = props.BLOQUE || 'N/D';
-            
-            // 2. Decreto y Clasificación
-            document.getElementById('info-decreto').textContent = props.DECRETO || 'N/D';
-            document.getElementById('info-clasif').textContent = props.CLASIF || 'N/D';
+  if (clasif.includes('PAFT')) {
+    badgePaft.textContent = 'PAFT: Sí';
+    badgePaft.className = 'tag-programa tag-active';
+  } else {
+    badgePaft.textContent = 'PAFT: No';
+    badgePaft.className = 'tag-programa tag-inactive';
+  }
 
-            // 3. Rellenar la tablita de áreas por año de forma segura
-            document.getElementById('ae-2018').textContent = props.AE_2018 ?? '-';
-            document.getElementById('ae-2019').textContent = props.AE_2019 ?? '-';
-            document.getElementById('ae-2020').textContent = props.AE_2020 ?? '-';
-            document.getElementById('ae-2021').textContent = props.AE_2021 ?? '-';
-            document.getElementById('ae-2022').textContent = props.AE_2022 ?? '-';
-            document.getElementById('ae-2023').textContent = props.AE_2023 ?? '-';
-            document.getElementById('ae-2024').textContent = props.AE_2024 ?? '-';
-          }
-        });
-      }
-    }).addTo(map);
+  // 3. Decreto, Bloque y Clasificación
+  document.getElementById('info-decreto').textContent = props.DECRETO || 'No especificado';
+  document.getElementById('info-bloque').textContent = props.BLOQUE || 'N/D';
+  document.getElementById('info-clasif').textContent = props.CLASIF || 'N/D';
 
-    // Ajustar el zoom automáticamente a la capa de territorios si se desea
-    // map.fitBounds(capaTerritorios.getBounds());
-  })
-  .catch(error => console.error('Error al cargar los datos:', error));
+  // 4. Desembolsos (tomando en cuenta cómo se visualizan en tu tabla)
+  document.getElementById('info-des1').textContent = props['PRIMER DESEMBOLS'] ?? props['PRIMER DESEMBOLSO'] ?? 'N/D';
+  document.getElementById('info-des2').textContent = props['GUNDO DESEMBOLS'] ?? props['SEGUNDO DESEMBOLSO'] ?? 'N/D';
+
+  // 5. Tabla de áreas efectivas por año (desde AE_2018 hasta AE_2024)
+  document.getElementById('ae-2018').textContent = props.AE_2018 ?? '-';
+  document.getElementById('ae-2019').textContent = props.AE_2019 ?? '-';
+  document.getElementById('ae-2020').textContent = props.AE_2020 ?? '-';
+  document.getElementById('ae-2021').textContent = props.AE_2021 ?? '-';
+  document.getElementById('ae-2022').textContent = props.AE_2022 ?? '-';
+  document.getElementById('ae-2023').textContent = props.AE_2023 ?? '-';
+  document.getElementById('ae-2024').textContent = props.AE_2024 ?? '-';
+}
