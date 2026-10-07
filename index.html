@@ -41,9 +41,9 @@
     </select>
   </div>
 
-  <!-- Panel de Control de Capas y Categorías -->
+  <!-- Panel de Control de Categorías de Proyectos -->
   <div class="layer-control-panel">
-    <h4>Filtro de Proyectos</h4>
+    <h4>Filtrar Categorías de Proyectos</h4>
     <label><input type="checkbox" class="cat-filter" value="ICS" checked> Inf. Comunitaria y Social (ICS)</label>
     <label><input type="checkbox" class="cat-filter" value="ISB" checked> Servicios Básicos (ISB)</label>
     <label><input type="checkbox" class="cat-filter" value="ECJ" checked> Educación, Cultura y Juv. (ECJ)</label>
@@ -52,7 +52,7 @@
     <label><input type="checkbox" class="cat-filter" value="ASV" checked> Ayuda Social y Mejoramiento (ASV)</label>
   </div>
 
-  <!-- Panel Estadístico / Línea de Tiempo (Inferior Izquierdo sobre el mapa) -->
+  <!-- Panel Estadístico / Gráfico de Visitas por Mes -->
   <div class="stats-panel">
     <h4>Visitas por Mes</h4>
     <div class="chart-container">
@@ -66,20 +66,17 @@
       <small>TERRITORIO SELECCIONADO</small>
       <h2 id="info-nombre">Haz clic en un territorio</h2>
       
-      <!-- Badges limpios -->
       <div class="badges-programa">
         <span id="badge-cref" class="tag-programa tag-inactive">CREF</span>
         <span id="badge-paft" class="tag-programa tag-inactive">PAFT</span>
       </div>
     </div>
 
-    <!-- Decreto de Creación -->
     <div class="card-info">
       <span class="label-titulo">Decreto de Creación</span>
       <span id="info-decreto" class="valor-destacado">-</span>
     </div>
 
-    <!-- Bloque y Clasificación -->
     <div class="grid-detalles">
       <div class="card-info">
         <span class="label-titulo">Bloque</span>
@@ -91,7 +88,6 @@
       </div>
     </div>
 
-    <!-- Desembolsos REDD+ -->
     <div class="card-info desembolsos-box">
       <span class="label-titulo">Desembolsos REDD+</span>
       <div class="desembolsos-flex">
@@ -101,7 +97,6 @@
       </div>
     </div>
 
-    <!-- Tabla de Áreas Efectivas por Año -->
     <div class="card-info">
       <span class="label-titulo">Área Efectiva Aprobada por Año (ha)</span>
       <table class="tabla-anios">
@@ -121,12 +116,11 @@
     </div>
   </div>
 
-  <!-- Contenedor principal del Mapa -->
   <div id="map"></div>
 
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <!-- Script principal del visor -->
+  <!-- Script principal corregido -->
   <script src="script.js"></script>
 </body>
 </html>
