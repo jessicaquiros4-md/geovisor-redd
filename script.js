@@ -1,6 +1,13 @@
 // 1. Inicializar mapa
 const map = L.map('map').setView([9.7489, -83.7534], 8);
 
+// Crear Panes específicos para controlar la Jerarquía de Capas (Z-Index)
+map.createPane('paneTerritorios');
+map.getPane('paneTerritorios').style.zIndex = 400;
+
+map.createPane('panePuntos');
+map.getPane('panePuntos').style.zIndex = 650; // ¡Garantiza que los puntos queden siempre arriba y clickeables!
+
 // Capas base dinámicas
 const basemaps = {
   osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }),
@@ -15,14 +22,14 @@ document.getElementById('select-basemap').addEventListener('change', (e) => {
   basemaps[e.target.value].addTo(map);
 });
 
-// Grupos y Estilos
+// Grupos principales independientes
 const capaTerritoriosGroup = L.layerGroup().addTo(map);
 const capaPuntosGroup = L.layerGroup().addTo(map);
 
-const estiloNormal = { color: '#0f766e', weight: 1.5, fillColor: '#14b8a6', fillOpacity: 0.35 };
-const estiloHover = { color: '#0f766e', weight: 3, fillColor: '#2dd4bf', fillOpacity: 0.55 };
+const estiloNormal = { color: '#0f766e', weight: 1.5, fillColor: '#14b8a6', fillOpacity: 0.35, pane: 'paneTerritorios' };
+const estiloHover = { color: '#0f766e', weight: 3, fillColor: '#2dd4bf', fillOpacity: 0.55, pane: 'paneTerritorios' };
 
-// Colores por categoría (mapeando siglas y textos completos)
+// Colores por categoría oficial
 const coloresCategorias = {
   "ICS": "#2563eb", "Infraestructura Comunitaria y Social (ICS)": "#2563eb",
   "ISB": "#dc2626", "Infraestructura de Servicios Básicos (ISB)": "#dc2626",
@@ -43,6 +50,7 @@ fetch('datos/territorios.geojson')
 
     const geoLayer = L.geoJSON(data, {
       style: estiloNormal,
+      pane: 'paneTerritorios',
       onEachFeature: (feature, layer) => {
         allLayersSearch.push({ layer, type: 'territorio', name: feature.properties.TERRITORIO });
         layer.on({
@@ -54,7 +62,6 @@ fetch('datos/territorios.geojson')
 
             document.getElementById('info-nombre').textContent = props.TERRITORIO || 'Territorio Indígena';
 
-            // Badges limpios corregidos
             const clasif = (props.CLASIF || '').toUpperCase();
             const badgeCref = document.getElementById('badge-cref');
             const badgePaft = document.getElementById('badge-paft');
@@ -102,10 +109,47 @@ fetch('datos/puntos.geojson')
   .then(data => {
     document.getElementById('kpi-visitas').textContent = data.features.length;
 
+    // Procesar datos para gráfico de visitas por mes
+    const mesesConteo = {};
+    data.features.forEach(f => {
+      const p = f.properties || {};
+      const fechaStr = p.fecha || p.FECHA || p.Fecha || '';
+      if (fechaStr) {
+        const mesAnio = fechaStr.substring(0, 7); // Formato YYYY-MM
+        mesesConteo[mesAnio] = (mesesConteo[mesAnio] || 0) + 1;
+      }
+    });
+
+    const mesesOrdenados = Object.keys(mesesConteo).sort();
+    const valoresVisitas = mesesOrdenados.map(m => mesesConteo[m]);
+
+    // Renderizar Gráfico Chart.js
+    const ctx = document.getElementById('visitasChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: mesesOrdenados.length ? mesesOrdenados : ['Sin fechas'],
+        datasets: [{
+          label: 'Visitas',
+          data: valoresVisitas.length ? valoresVisitas : [0],
+          backgroundColor: '#0f766e',
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } } },
+          x: { ticks: { font: { size: 10 } } }
+        }
+      }
+    });
+
     const puntosLayer = L.geoJSON(data, {
       pointToLayer: (feature, latlng) => {
         const p = feature.properties || {};
-        // Busca la categoría independientemente del nombre del campo en el GeoJSON
         const catRaw = p.categoria || p.CATEGORIA || p.Clasificacion || p.CLASIFICACION || p.tipo || 'ICS';
         const color = coloresCategorias[catRaw] || '#0f766e';
         
@@ -114,7 +158,8 @@ fetch('datos/puntos.geojson')
           fillColor: color,
           color: '#ffffff',
           weight: 2,
-          fillOpacity: 0.95
+          fillOpacity: 0.95,
+          pane: 'panePuntos' // Asignado al pane superior
         });
         
         marker.categoryKey = catRaw;
@@ -148,7 +193,13 @@ fetch('datos/puntos.geojson')
     capaPuntosGroup.addLayer(puntosLayer);
   });
 
-// 4. Filtrado interactivo por checkboxes de categorías
+// 4. Control Leaflet nativo para apagar/encender Grupos Principales
+L.control.layers(null, {
+  "Territorios Indígenas": capaTerritoriosGroup,
+  "Proyectos / Visitas": capaPuntosGroup
+}, { collapsed: false }).addTo(map);
+
+// 5. Filtrado por Checkboxes laterales de Categorías
 document.querySelectorAll('.cat-filter').forEach(checkbox => {
   checkbox.addEventListener('change', () => {
     const activeCategories = Array.from(document.querySelectorAll('.cat-filter:checked')).map(cb => cb.value);
@@ -164,7 +215,7 @@ document.querySelectorAll('.cat-filter').forEach(checkbox => {
   });
 });
 
-// 5. Buscador Rápido
+// 6. Buscador Rápido
 document.getElementById('buscador').addEventListener('input', (e) => {
   const query = e.target.value.toLowerCase();
   if (query.length < 2) return;
