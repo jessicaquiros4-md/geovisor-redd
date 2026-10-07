@@ -11,29 +11,29 @@ const basemaps = {
 basemaps.osm.addTo(map);
 
 document.getElementById('select-basemap').addEventListener('change', (e) => {
-  Object.values(basemaps.toLayers ? basemaps.toLayers() : basemaps).forEach(layer => map.removeLayer(layer));
+  Object.values(basemaps).forEach(layer => map.removeLayer(layer));
   basemaps[e.target.value].addTo(map);
 });
 
-// Grupos de capas para control independiente
+// Grupos y Estilos
 const capaTerritoriosGroup = L.layerGroup().addTo(map);
 const capaPuntosGroup = L.layerGroup().addTo(map);
 
-// Estilos de Territorios
 const estiloNormal = { color: '#0f766e', weight: 1.5, fillColor: '#14b8a6', fillOpacity: 0.35 };
 const estiloHover = { color: '#0f766e', weight: 3, fillColor: '#2dd4bf', fillOpacity: 0.55 };
 
-// Diccionario de colores para las 6 Categorías de Proyectos
+// Colores por categoría (mapeando siglas y textos completos)
 const coloresCategorias = {
-  "Infraestructura Comunitaria y Social (ICS)": "#2563eb",       // Azul
-  "Infraestructura de Servicios Básicos (ISB)": "#dc2626",      // Rojo
-  "Educación, Cultura y Juventud (ECJ)": "#d97706",             // Naranja
-  "Turismo Sostenible y Emprendimientos Productivos (TEP)": "#16a34a", // Verde
-  "Seguridad, Vigilancia y Gestión Ambiental (SVA)": "#9333ea",   // Morado
-  "Ayuda Social y Mejoramiento de Infraestructura (ASV)": "#db2777" // Rosado
+  "ICS": "#2563eb", "Infraestructura Comunitaria y Social (ICS)": "#2563eb",
+  "ISB": "#dc2626", "Infraestructura de Servicios Básicos (ISB)": "#dc2626",
+  "ECJ": "#d97706", "Educación, Cultura y Juventud (ECJ)": "#d97706",
+  "TEP": "#16a34a", "Turismo Sostenible y Emprendimientos Productivos (TEP)": "#16a34a",
+  "SVA": "#9333ea", "Seguridad, Vigilancia y Gestión Ambiental (SVA)": "#9333ea",
+  "ASV": "#db2777", "Ayuda Social y Mejoramiento de Infraestructura (ASV)": "#db2777"
 };
 
 let allLayersSearch = [];
+let puntosLayersList = [];
 
 // 2. Cargar Territorios Indígenas
 fetch('datos/territorios.geojson')
@@ -54,16 +54,26 @@ fetch('datos/territorios.geojson')
 
             document.getElementById('info-nombre').textContent = props.TERRITORIO || 'Territorio Indígena';
 
-            // Badges limpios (sin repetir texto)
+            // Badges limpios corregidos
             const clasif = (props.CLASIF || '').toUpperCase();
             const badgeCref = document.getElementById('badge-cref');
             const badgePaft = document.getElementById('badge-paft');
 
-            if (clasif.includes('CREF')) { badgeCref.textContent = 'CREF'; badgeCref.className = 'tag-programa tag-active'; }
-            else { badgeCref.textContent = 'CREF'; badgeCref.className = 'tag-programa tag-inactive'; }
+            if (clasif.includes('CREF')) {
+              badgeCref.textContent = 'CREF: Sí';
+              badgeCref.className = 'tag-programa tag-active';
+            } else {
+              badgeCref.textContent = 'CREF: No';
+              badgeCref.className = 'tag-programa tag-inactive';
+            }
 
-            if (clasif.includes('PAFT')) { badgePaft.textContent = 'PAFT'; badgePaft.className = 'tag-programa tag-active'; }
-            else { badgePaft.textContent = 'PAFT'; badgePaft.className = 'tag-programa tag-inactive'; }
+            if (clasif.includes('PAFT')) {
+              badgePaft.textContent = 'PAFT: Sí';
+              badgePaft.className = 'tag-programa tag-active';
+            } else {
+              badgePaft.textContent = 'PAFT: No';
+              badgePaft.className = 'tag-programa tag-inactive';
+            }
 
             document.getElementById('info-decreto').textContent = props.DECRETO || 'No especificado';
             document.getElementById('info-bloque').textContent = props.BLOQUE || 'N/D';
@@ -94,32 +104,39 @@ fetch('datos/puntos.geojson')
 
     const puntosLayer = L.geoJSON(data, {
       pointToLayer: (feature, latlng) => {
-        const cat = feature.properties.categoria || feature.properties.CATEGORIA || 'General';
-        const color = coloresCategorias[cat] || '#0f766e';
-        return L.circleMarker(latlng, {
+        const p = feature.properties || {};
+        // Busca la categoría independientemente del nombre del campo en el GeoJSON
+        const catRaw = p.categoria || p.CATEGORIA || p.Clasificacion || p.CLASIFICACION || p.tipo || 'ICS';
+        const color = coloresCategorias[catRaw] || '#0f766e';
+        
+        const marker = L.circleMarker(latlng, {
           radius: 7,
           fillColor: color,
           color: '#ffffff',
           weight: 2,
           fillOpacity: 0.95
         });
+        
+        marker.categoryKey = catRaw;
+        puntosLayersList.push({ marker, category: catRaw });
+        return marker;
       },
       onEachFeature: (feature, layer) => {
         const p = feature.properties || {};
-        const nombreProj = p.nombre || p.NOMBRE || 'Proyecto sin nombre';
+        const nombreProj = p.nombre || p.NOMBRE || p.Proyecto || 'Proyecto sin nombre';
         allLayersSearch.push({ layer, type: 'punto', name: nombreProj });
 
-        const catFormateada = p.categoria || p.CATEGORIA || 'Sin clasificación';
-        const desc = p.descripcion || p.DESCRIPCION || 'Sin descripción detallada.';
+        const catFormateada = p.categoria || p.CATEGORIA || p.Clasificacion || p.CLASIFICACION || 'General';
+        const desc = p.descripcion || p.DESCRIPCION || p.Detalle || 'Sin descripción detallada.';
         const territorio = p.territorio || p.TERRITORIO || 'No especificado';
-        const fecha = p.fecha || p.FECHA || 'N/D';
-        const desembolso = p.desembolso || p.DESEMBOLSO || 'N/D';
+        const fecha = p.fecha || p.FECHA || p.Fecha || 'N/D';
+        const desembolso = p.desembolso || p.DESEMBOLSO || p.Desembolso || 'N/D';
 
         layer.bindPopup(`
           <div class="popup-proyecto">
             <h3>${nombreProj}</h3>
             <p><strong>Territorio:</strong> ${territorio}</p>
-            <p><strong>Categoría:</strong> ${catFormateada}</p>
+            <p><strong>Categoría del Proyecto:</strong> ${catFormateada}</p>
             <p><strong>Descripción:</strong> ${desc}</p>
             <p><strong>Fecha de Visita:</strong> ${fecha}</p>
             <p><strong>Desembolso:</strong> ${desembolso}</p>
@@ -131,11 +148,21 @@ fetch('datos/puntos.geojson')
     capaPuntosGroup.addLayer(puntosLayer);
   });
 
-// 4. Control de Capas Leaflet (Layer Control independiente)
-L.control.layers(null, {
-  "Territorios Indígenas": capaTerritoriosGroup,
-  "Proyectos / Visitas": capaPuntosGroup
-}, { collapsed: false }).addTo(map);
+// 4. Filtrado interactivo por checkboxes de categorías
+document.querySelectorAll('.cat-filter').forEach(checkbox => {
+  checkbox.addEventListener('change', () => {
+    const activeCategories = Array.from(document.querySelectorAll('.cat-filter:checked')).map(cb => cb.value);
+
+    puntosLayersList.forEach(item => {
+      const match = activeCategories.some(cat => item.category.includes(cat));
+      if (match) {
+        if (!capaPuntosGroup.hasLayer(item.marker)) capaPuntosGroup.addLayer(item.marker);
+      } else {
+        if (capaPuntosGroup.hasLayer(item.marker)) capaPuntosGroup.removeLayer(item.marker);
+      }
+    });
+  });
+});
 
 // 5. Buscador Rápido
 document.getElementById('buscador').addEventListener('input', (e) => {
