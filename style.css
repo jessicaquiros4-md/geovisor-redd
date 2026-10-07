@@ -66,8 +66,36 @@ html, body {
   outline: none;
 }
 
-.search-container input:focus {
-  border-color: #0f766e;
+/* Panel de Control de Capas por Categoría */
+.layer-control-panel {
+  position: absolute;
+  top: 130px;
+  right: 15px;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+  width: 240px;
+}
+
+.layer-control-panel h4 {
+  margin: 0 0 8px 0;
+  font-size: 0.75rem;
+  color: #0f766e;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.layer-control-panel label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: #334155;
+  margin-bottom: 5px;
+  cursor: pointer;
 }
 
 /* Selector de Mapa Base */
@@ -125,7 +153,7 @@ html, body {
   margin: 4px 0 6px 0;
 }
 
-/* Badges limpios CREF / PAFT sin repetir texto */
+/* Badges limpios corregidos */
 .badges-programa {
   display: flex;
   gap: 8px;
