@@ -7,8 +7,6 @@
   
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <!-- Chart.js para estadísticas -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
   <!-- Estilos propios -->
   <link rel="stylesheet" href="style.css">
@@ -22,7 +20,7 @@
       <span id="kpi-territorios" class="kpi-value">0</span>
     </div>
     <div class="kpi-card">
-      <span class="kpi-title">Proyectos / Visitas</span>
+      <span class="kpi-title">Visitas / Proyectos</span>
       <span id="kpi-visitas" class="kpi-value">0</span>
     </div>
   </div>
@@ -41,13 +39,24 @@
     </select>
   </div>
 
-  <!-- Panel Lateral Izquierdo -->
+  <!-- Panel de Control de Capas por Categoría (Filtros visuales) -->
+  <div class="layer-control-panel">
+    <h4>Filtro de Proyectos</h4>
+    <label><input type="checkbox" class="cat-filter" value="ICS" checked> Inf. Comunitaria y Social (ICS)</label>
+    <label><input type="checkbox" class="cat-filter" value="ISB" checked> Servicios Básicos (ISB)</label>
+    <label><input type="checkbox" class="cat-filter" value="ECJ" checked> Educación, Cultura y Juv. (ECJ)</label>
+    <label><input type="checkbox" class="cat-filter" value="TEP" checked> Turismo y Emprendimientos (TEP)</label>
+    <label><input type="checkbox" class="cat-filter" value="SVA" checked> Seguridad y Gestión Amb. (SVA)</label>
+    <label><input type="checkbox" class="cat-filter" value="ASV" checked> Ayuda Social y Mejoramiento (ASV)</label>
+  </div>
+
+  <!-- Panel Lateral Izquierdo (Ficha del Territorio) -->
   <div class="sidebar">
     <div class="header-territorio">
       <small>TERRITORIO SELECCIONADO</small>
       <h2 id="info-nombre">Haz clic en un territorio</h2>
       
-      <!-- Etiquetas dinámicas limpias (sin duplicar texto interno) -->
+      <!-- Badges limpios corregidos -->
       <div class="badges-programa">
         <span id="badge-cref" class="tag-programa tag-inactive">CREF</span>
         <span id="badge-paft" class="tag-programa tag-inactive">PAFT</span>
