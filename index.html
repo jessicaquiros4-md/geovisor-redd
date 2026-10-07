@@ -3,15 +3,43 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Geovisor REDD+ - Territorios Indígenas y Visitas</title>
+  <title>Geovisor REDD+ - Territorios y Proyectos</title>
   
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Chart.js para estadísticas -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
   <!-- Estilos propios -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+  <!-- KPI Cards Superiores -->
+  <div id="kpi-panel" class="kpi-container">
+    <div class="kpi-card">
+      <span class="kpi-title">Territorios</span>
+      <span id="kpi-territorios" class="kpi-value">0</span>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-title">Proyectos / Visitas</span>
+      <span id="kpi-visitas" class="kpi-value">0</span>
+    </div>
+  </div>
+
+  <!-- Buscador rápido flotante -->
+  <div class="search-container">
+    <input type="text" id="buscador" placeholder="🔍 Buscar territorio o proyecto..." />
+  </div>
+
+  <!-- Selector de Mapa Base -->
+  <div class="basemap-selector">
+    <select id="select-basemap">
+      <option value="osm">Mapa Estándar (OSM)</option>
+      <option value="carto">Gris Limpio (CartoDB)</option>
+      <option value="esri">Satélite (Esri)</option>
+    </select>
+  </div>
 
   <!-- Panel Lateral Izquierdo -->
   <div class="sidebar">
@@ -19,10 +47,10 @@
       <small>TERRITORIO SELECCIONADO</small>
       <h2 id="info-nombre">Haz clic en un territorio</h2>
       
-      <!-- Etiquetas dinámicas para CREF y PAFT -->
+      <!-- Etiquetas dinámicas limpias (sin duplicar texto interno) -->
       <div class="badges-programa">
-        <span id="badge-cref" class="tag-programa tag-inactive">CREF: --</span>
-        <span id="badge-paft" class="tag-programa tag-inactive">PAFT: --</span>
+        <span id="badge-cref" class="tag-programa tag-inactive">CREF</span>
+        <span id="badge-paft" class="tag-programa tag-inactive">PAFT</span>
       </div>
     </div>
 
@@ -74,12 +102,11 @@
     </div>
   </div>
 
-  <!-- Contenedor principal del Mapa (¡Vital para que aparezca!) -->
+  <!-- Contenedor principal del Mapa -->
   <div id="map"></div>
 
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  
   <!-- Script principal del visor -->
   <script src="script.js"></script>
 </body>
