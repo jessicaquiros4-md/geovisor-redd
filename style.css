@@ -13,7 +13,83 @@ html, body {
   z-index: 1;
 }
 
-/* Panel lateral flotante a la izquierda */
+/* KPI Cards flotantes superiores */
+.kpi-container {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 1000;
+  display: flex;
+  gap: 10px;
+}
+
+.kpi-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  padding: 8px 14px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  text-align: center;
+}
+
+.kpi-title {
+  display: block;
+  font-size: 0.6rem;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.kpi-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f766e;
+}
+
+/* Buscador rápido */
+.search-container {
+  position: absolute;
+  top: 75px;
+  right: 15px;
+  z-index: 1000;
+}
+
+.search-container input {
+  width: 240px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  font-size: 0.85rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  outline: none;
+}
+
+.search-container input:focus {
+  border-color: #0f766e;
+}
+
+/* Selector de Mapa Base */
+.basemap-selector {
+  position: absolute;
+  bottom: 25px;
+  right: 15px;
+  z-index: 1000;
+}
+
+.basemap-selector select {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  font-size: 0.85rem;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  cursor: pointer;
+}
+
+/* Panel lateral izquierdo */
 .sidebar {
   position: absolute;
   top: 15px;
@@ -49,7 +125,7 @@ html, body {
   margin: 4px 0 6px 0;
 }
 
-/* Badges CREF / PAFT */
+/* Badges limpios CREF / PAFT sin repetir texto */
 .badges-programa {
   display: flex;
   gap: 8px;
@@ -161,4 +237,28 @@ html, body {
 .tabla-anios td:last-child {
   text-align: right;
   font-weight: 500;
+}
+
+/* Estilos de Pop-ups de Proyectos */
+.popup-proyecto h3 {
+  color: #0f766e;
+  font-size: 1rem;
+  margin: 0 0 6px 0;
+}
+
+.popup-proyecto p {
+  margin: 4px 0;
+  font-size: 0.85rem;
+  color: #334155;
+}
+
+.popup-img-preview {
+  margin-top: 8px;
+  padding: 6px;
+  background: #f1f5f9;
+  text-align: center;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  color: #64748b;
+  font-style: italic;
 }
