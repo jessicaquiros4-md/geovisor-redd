@@ -12,7 +12,6 @@ html, body {
   z-index: 1;
 }
 
-/* KPI Cards flotantes superiores */
 .kpi-container {
   position: absolute;
   top: 15px;
@@ -45,7 +44,6 @@ html, body {
   color: #0f766e;
 }
 
-/* Buscador rápido */
 .search-container {
   position: absolute;
   top: 75px;
@@ -59,13 +57,11 @@ html, body {
   border-radius: 8px;
   border: 1px solid #cbd5e1;
   background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(8px);
   font-size: 0.85rem;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   outline: none;
 }
 
-/* Panel de Control de Capas por Categoría */
 .layer-control-panel {
   position: absolute;
   top: 130px;
@@ -84,7 +80,6 @@ html, body {
   font-size: 0.75rem;
   color: #0f766e;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .layer-control-panel label {
@@ -97,7 +92,6 @@ html, body {
   cursor: pointer;
 }
 
-/* Panel Estadístico Inferior */
 .stats-panel {
   position: absolute;
   bottom: 65px;
@@ -124,7 +118,6 @@ html, body {
   width: 100%;
 }
 
-/* Selector de Mapa Base */
 .basemap-selector {
   position: absolute;
   bottom: 25px;
@@ -143,7 +136,6 @@ html, body {
   cursor: pointer;
 }
 
-/* Panel lateral izquierdo */
 .sidebar {
   position: absolute;
   top: 15px;
@@ -179,7 +171,6 @@ html, body {
   margin: 4px 0 6px 0;
 }
 
-/* Badges limpios */
 .badges-programa {
   display: flex;
   gap: 8px;
@@ -205,7 +196,6 @@ html, body {
   border: 1px solid #e2e8f0;
 }
 
-/* Tarjetas internas */
 .card-info {
   background: #f8fafc;
   border: 1px solid #f1f5f9;
@@ -221,7 +211,6 @@ html, body {
   color: #64748b;
   text-transform: uppercase;
   margin-bottom: 3px;
-  letter-spacing: 0.5px;
 }
 
 .valor-destacado {
@@ -242,7 +231,6 @@ html, body {
   font-weight: 500;
 }
 
-/* Desembolsos */
 .desembolsos-flex {
   display: flex;
   justify-content: space-around;
@@ -268,7 +256,6 @@ html, body {
   background-color: #cbd5e1;
 }
 
-/* Tabla de años */
 .tabla-anios {
   width: 100%;
   border-collapse: collapse;
@@ -293,7 +280,6 @@ html, body {
   font-weight: 500;
 }
 
-/* Estilos de Pop-ups de Proyectos */
 .popup-proyecto h3 {
   color: #0f766e;
   font-size: 1rem;
