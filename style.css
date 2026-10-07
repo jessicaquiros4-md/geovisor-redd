@@ -1,4 +1,3 @@
-/* Configuración general de pantalla y mapa */
 html, body {
   margin: 0;
   padding: 0;
@@ -98,6 +97,33 @@ html, body {
   cursor: pointer;
 }
 
+/* Panel Estadístico Inferior */
+.stats-panel {
+  position: absolute;
+  bottom: 65px;
+  left: 410px;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  padding: 10px 14px;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+  width: 300px;
+}
+
+.stats-panel h4 {
+  margin: 0 0 6px 0;
+  font-size: 0.75rem;
+  color: #0f766e;
+  text-transform: uppercase;
+}
+
+.chart-container {
+  position: relative;
+  height: 110px;
+  width: 100%;
+}
+
 /* Selector de Mapa Base */
 .basemap-selector {
   position: absolute;
@@ -153,7 +179,7 @@ html, body {
   margin: 4px 0 6px 0;
 }
 
-/* Badges limpios corregidos */
+/* Badges limpios */
 .badges-programa {
   display: flex;
   gap: 8px;
