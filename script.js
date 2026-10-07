@@ -1,14 +1,13 @@
-// 1. Inicializar mapa
+// 1. Inicializar mapa y Panes para garantizar orden de capas (Z-Index estricto)
 const map = L.map('map').setView([9.7489, -83.7534], 8);
 
-// Crear Panes específicos para controlar la Jerarquía de Capas (Z-Index)
 map.createPane('paneTerritorios');
 map.getPane('paneTerritorios').style.zIndex = 400;
 
 map.createPane('panePuntos');
 map.getPane('panePuntos').style.zIndex = 650; // ¡Garantiza que los puntos queden siempre arriba y clickeables!
 
-// Capas base dinámicas
+// Mapas base
 const basemaps = {
   osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }),
   carto: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19, attribution: '&copy; CARTO' }),
@@ -22,14 +21,13 @@ document.getElementById('select-basemap').addEventListener('change', (e) => {
   basemaps[e.target.value].addTo(map);
 });
 
-// Grupos principales independientes
+// Grupos principales para el control de capas de Leaflet
 const capaTerritoriosGroup = L.layerGroup().addTo(map);
 const capaPuntosGroup = L.layerGroup().addTo(map);
 
 const estiloNormal = { color: '#0f766e', weight: 1.5, fillColor: '#14b8a6', fillOpacity: 0.35, pane: 'paneTerritorios' };
 const estiloHover = { color: '#0f766e', weight: 3, fillColor: '#2dd4bf', fillOpacity: 0.55, pane: 'paneTerritorios' };
 
-// Colores por categoría oficial
 const coloresCategorias = {
   "ICS": "#2563eb", "Infraestructura Comunitaria y Social (ICS)": "#2563eb",
   "ISB": "#dc2626", "Infraestructura de Servicios Básicos (ISB)": "#dc2626",
@@ -41,6 +39,7 @@ const coloresCategorias = {
 
 let allLayersSearch = [];
 let puntosLayersList = [];
+let chartInstance = null;
 
 // 2. Cargar Territorios Indígenas
 fetch('datos/territorios.geojson')
@@ -52,17 +51,19 @@ fetch('datos/territorios.geojson')
       style: estiloNormal,
       pane: 'paneTerritorios',
       onEachFeature: (feature, layer) => {
-        allLayersSearch.push({ layer, type: 'territorio', name: feature.properties.TERRITORIO });
+        const props = feature.properties || {};
+        const nombreTerritorio = props.TERRITORIO || props.territorio || props.NOMBRE || 'Territorio Indígena';
+        
+        allLayersSearch.push({ layer, type: 'territorio', name: nombreTerritorio });
+
         layer.on({
           mouseover: (e) => { e.target.setStyle(estiloHover); e.target.bringToFront(); },
           mouseout: (e) => { geoLayer.resetStyle(e.target); },
           click: (e) => {
             map.fitBounds(e.target.getBounds(), { padding: [40, 40] });
-            const props = feature.properties || {};
+            document.getElementById('info-nombre').textContent = nombreTerritorio;
 
-            document.getElementById('info-nombre').textContent = props.TERRITORIO || 'Territorio Indígena';
-
-            const clasif = (props.CLASIF || '').toUpperCase();
+            const clasif = (props.CLASIF || props.clasificacion || '').toUpperCase();
             const badgeCref = document.getElementById('badge-cref');
             const badgePaft = document.getElementById('badge-paft');
 
@@ -82,12 +83,12 @@ fetch('datos/territorios.geojson')
               badgePaft.className = 'tag-programa tag-inactive';
             }
 
-            document.getElementById('info-decreto').textContent = props.DECRETO || 'No especificado';
-            document.getElementById('info-bloque').textContent = props.BLOQUE || 'N/D';
-            document.getElementById('info-clasif').textContent = props.CLASIF || 'N/D';
+            document.getElementById('info-decreto').textContent = props.DECRETO || props.decreto || 'No especificado';
+            document.getElementById('info-bloque').textContent = props.BLOQUE || props.bloque || 'N/D';
+            document.getElementById('info-clasif').textContent = props.CLASIF || props.clasificacion || 'N/D';
 
-            document.getElementById('info-des1').textContent = props['PRIMER DESEMBOLS'] ?? props['PRIMER DESEMBOLSO'] ?? 'N/D';
-            document.getElementById('info-des2').textContent = props['GUNDO DESEMBOLS'] ?? props['SEGUNDO DESEMBOLSO'] ?? 'N/D';
+            document.getElementById('info-des1').textContent = props['PRIMER DESEMBOLS'] ?? props['PRIMER DESEMBOLSO'] ?? props['desembolso_1'] ?? 'N/D';
+            document.getElementById('info-des2').textContent = props['GUNDO DESEMBOLS'] ?? props['SEGUNDO DESEMBOLSO'] ?? props['desembolso_2'] ?? 'N/D';
 
             document.getElementById('ae-2018').textContent = props.AE_2018 ?? '-';
             document.getElementById('ae-2019').textContent = props.AE_2019 ?? '-';
@@ -109,26 +110,29 @@ fetch('datos/puntos.geojson')
   .then(data => {
     document.getElementById('kpi-visitas').textContent = data.features.length;
 
-    // Procesar datos para gráfico de visitas por mes
+    // Procesar gráfico de visitas por mes basado en fechas reales
     const mesesConteo = {};
     data.features.forEach(f => {
       const p = f.properties || {};
-      const fechaStr = p.fecha || p.FECHA || p.Fecha || '';
+      const fechaStr = p.fecha || p.FECHA || p.Fecha || p.date || '';
       if (fechaStr) {
-        const mesAnio = fechaStr.substring(0, 7); // Formato YYYY-MM
-        mesesConteo[mesAnio] = (mesesConteo[mesAnio] || 0) + 1;
+        const mesAnio = fechaStr.substring(0, 7);
+        if (mesAnio.length >= 7) {
+          mesesConteo[mesAnio] = (mesesConteo[mesAnio] || 0) + 1;
+        }
       }
     });
 
     const mesesOrdenados = Object.keys(mesesConteo).sort();
     const valoresVisitas = mesesOrdenados.map(m => mesesConteo[m]);
 
-    // Renderizar Gráfico Chart.js
     const ctx = document.getElementById('visitasChart').getContext('2d');
-    new Chart(ctx, {
+    if (chartInstance) chartInstance.destroy();
+    
+    chartInstance = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: mesesOrdenados.length ? mesesOrdenados : ['Sin fechas'],
+        labels: mesesOrdenados.length ? mesesOrdenados : ['Sin fechas válidas'],
         datasets: [{
           label: 'Visitas',
           data: valoresVisitas.length ? valoresVisitas : [0],
@@ -154,7 +158,7 @@ fetch('datos/puntos.geojson')
         const color = coloresCategorias[catRaw] || '#0f766e';
         
         const marker = L.circleMarker(latlng, {
-          radius: 7,
+          radius: 8,
           fillColor: color,
           color: '#ffffff',
           weight: 2,
@@ -168,14 +172,17 @@ fetch('datos/puntos.geojson')
       },
       onEachFeature: (feature, layer) => {
         const p = feature.properties || {};
-        const nombreProj = p.nombre || p.NOMBRE || p.Proyecto || 'Proyecto sin nombre';
-        allLayersSearch.push({ layer, type: 'punto', name: nombreProj });
-
-        const catFormateada = p.categoria || p.CATEGORIA || p.Clasificacion || p.CLASIFICACION || 'General';
-        const desc = p.descripcion || p.DESCRIPCION || p.Detalle || 'Sin descripción detallada.';
+        
+        // Mapeo seguro de propiedades (evita textos vacíos)
+        const nombreProj = p.nombre || p.NOMBRE || p.Proyecto || p.proyecto || 'Proyecto sin nombre';
         const territorio = p.territorio || p.TERRITORIO || 'No especificado';
+        const catFormateada = p.categoria || p.CATEGORIA || p.Clasificacion || p.CLASIFICACION || 'General';
+        const desc = p.descripcion || p.DESCRIPCION || p.Detalle || p.detalle || 'Sin descripción detallada.';
         const fecha = p.fecha || p.FECHA || p.Fecha || 'N/D';
         const desembolso = p.desembolso || p.DESEMBOLSO || p.Desembolso || 'N/D';
+
+        // Registrar en el buscador general
+        allLayersSearch.push({ layer, type: 'punto', name: nombreProj });
 
         layer.bindPopup(`
           <div class="popup-proyecto">
@@ -193,13 +200,13 @@ fetch('datos/puntos.geojson')
     capaPuntosGroup.addLayer(puntosLayer);
   });
 
-// 4. Control Leaflet nativo para apagar/encender Grupos Principales
+// 4. Control de capas estándar de Leaflet (para encender/apagar grupos globales)
 L.control.layers(null, {
   "Territorios Indígenas": capaTerritoriosGroup,
   "Proyectos / Visitas": capaPuntosGroup
 }, { collapsed: false }).addTo(map);
 
-// 5. Filtrado por Checkboxes laterales de Categorías
+// 5. Filtrado por Checkboxes de Categorías
 document.querySelectorAll('.cat-filter').forEach(checkbox => {
   checkbox.addEventListener('change', () => {
     const activeCategories = Array.from(document.querySelectorAll('.cat-filter:checked')).map(cb => cb.value);
@@ -215,9 +222,9 @@ document.querySelectorAll('.cat-filter').forEach(checkbox => {
   });
 });
 
-// 6. Buscador Rápido
+// 6. Buscador Rápido Global corregido
 document.getElementById('buscador').addEventListener('input', (e) => {
-  const query = e.target.value.toLowerCase();
+  const query = e.target.value.toLowerCase().trim();
   if (query.length < 2) return;
 
   const match = allLayersSearch.find(item => item.name && item.name.toLowerCase().includes(query));
