@@ -1,11 +1,11 @@
-// 1. Inicializar mapa y Panes para garantizar orden de capas (Z-Index estricto)
+// 1. Inicializar mapa y Panes con orden de capas estricto (Z-Index)
 const map = L.map('map').setView([9.7489, -83.7534], 8);
 
 map.createPane('paneTerritorios');
 map.getPane('paneTerritorios').style.zIndex = 400;
 
 map.createPane('panePuntos');
-map.getPane('panePuntos').style.zIndex = 650; // ¡Garantiza que los puntos queden siempre arriba y clickeables!
+map.getPane('panePuntos').style.zIndex = 650; // ¡Los puntos quedan siempre arriba y clicables!
 
 // Mapas base
 const basemaps = {
@@ -21,20 +21,21 @@ document.getElementById('select-basemap').addEventListener('change', (e) => {
   basemaps[e.target.value].addTo(map);
 });
 
-// Grupos principales para el control de capas de Leaflet
+// Grupos principales para el control global de capas en Leaflet
 const capaTerritoriosGroup = L.layerGroup().addTo(map);
 const capaPuntosGroup = L.layerGroup().addTo(map);
 
 const estiloNormal = { color: '#0f766e', weight: 1.5, fillColor: '#14b8a6', fillOpacity: 0.35, pane: 'paneTerritorios' };
 const estiloHover = { color: '#0f766e', weight: 3, fillColor: '#2dd4bf', fillOpacity: 0.55, pane: 'paneTerritorios' };
 
-const coloresCategorias = {
-  "ICS": "#2563eb", "Infraestructura Comunitaria y Social (ICS)": "#2563eb",
-  "ISB": "#dc2626", "Infraestructura de Servicios Básicos (ISB)": "#dc2626",
-  "ECJ": "#d97706", "Educación, Cultura y Juventud (ECJ)": "#d97706",
-  "TEP": "#16a34a", "Turismo Sostenible y Emprendimientos Productivos (TEP)": "#16a34a",
-  "SVA": "#9333ea", "Seguridad, Vigilancia y Gestión Ambiental (SVA)": "#9333ea",
-  "ASV": "#db2777", "Ayuda Social y Mejoramiento de Infraestructura (ASV)": "#db2777"
+// Diccionario de colores y nombres formales para categorías
+const infoCategorias = {
+  "ICS": { nombre: "Infraestructura Comunitaria y Social (ICS)", color: "#2563eb" },
+  "ISA": { nombre: "Infraestructura de Servicios Básicos y Agua (ISA)", color: "#dc2626" },
+  "ECJ": { nombre: "Educación, Cultura y Juventud (ECJ)", color: "#d97706" },
+  "TEP": { nombre: "Turismo Sostenible y Emprendimientos Productivos (TEP)", color: "#16a34a" },
+  "SVA": { nombre: "Seguridad, Vigilancia y Gestión Ambiental (SVA)", color: "#9333ea" },
+  "ASV": { nombre: "Ayuda Social y Mejoramiento de Infraestructura (ASV)", color: "#db2777" }
 };
 
 let allLayersSearch = [];
@@ -114,9 +115,10 @@ fetch('datos/puntos.geojson')
     const mesesConteo = {};
     data.features.forEach(f => {
       const p = f.properties || {};
-      const fechaStr = p.fecha || p.FECHA || p.Fecha || p.date || '';
+      const fechaStr = p.11_Fecha_de_visita || p.fecha || p.FECHA || p.Fecha || p.date || '';
       if (fechaStr) {
-        const mesAnio = fechaStr.substring(0, 7);
+        // Extraer formato año/mes (ej. YYYY-MM o adaptado)
+        let mesAnio = fechaStr.substring(0, 7);
         if (mesAnio.length >= 7) {
           mesesConteo[mesAnio] = (mesesConteo[mesAnio] || 0) + 1;
         }
@@ -154,16 +156,25 @@ fetch('datos/puntos.geojson')
     const puntosLayer = L.geoJSON(data, {
       pointToLayer: (feature, latlng) => {
         const p = feature.properties || {};
-        const catRaw = p.categoria || p.CATEGORIA || p.Clasificacion || p.CLASIFICACION || p.tipo || 'ICS';
-        const color = coloresCategorias[catRaw] || '#0f766e';
+        let catRaw = (p.Clasificacion || p.categoria || p.CATEGORIA || 'ICS').toUpperCase();
+        
+        // Extraer clave corta si viene el texto largo
+        if (catRaw.includes('COMUNITARIA')) catRaw = 'ICS';
+        else if (catRaw.includes('SERVICIOS') || catRaw.includes('AGUA')) catRaw = 'ISA';
+        else if (catRaw.includes('EDUCACION')) catRaw = 'ECJ';
+        else if (catRaw.includes('TURISMO')) catRaw = 'TEP';
+        else if (catRaw.includes('SEGURIDAD')) catRaw = 'SVA';
+        else if (catRaw.includes('AYUDA')) catRaw = 'ASV';
+
+        const configCat = infoCategorias[catRaw] || { nombre: catRaw, color: '#0f766e' };
         
         const marker = L.circleMarker(latlng, {
           radius: 8,
-          fillColor: color,
+          fillColor: configCat.color,
           color: '#ffffff',
           weight: 2,
           fillOpacity: 0.95,
-          pane: 'panePuntos' // Asignado al pane superior
+          pane: 'panePuntos'
         });
         
         marker.categoryKey = catRaw;
@@ -173,15 +184,22 @@ fetch('datos/puntos.geojson')
       onEachFeature: (feature, layer) => {
         const p = feature.properties || {};
         
-        // Mapeo seguro de propiedades (evita textos vacíos)
-        const nombreProj = p.nombre || p.NOMBRE || p.Proyecto || p.proyecto || 'Proyecto sin nombre';
-        const territorio = p.territorio || p.TERRITORIO || 'No especificado';
-        const catFormateada = p.categoria || p.CATEGORIA || p.Clasificacion || p.CLASIFICACION || 'General';
-        const desc = p.descripcion || p.DESCRIPCION || p.Detalle || p.detalle || 'Sin descripción detallada.';
-        const fecha = p.fecha || p.FECHA || p.Fecha || 'N/D';
-        const desembolso = p.desembolso || p.DESEMBOLSO || p.Desembolso || 'N/D';
+        const nombreProj = p['3_Nombre_de_Proyecto'] || p.nombre || p.NOMBRE || 'Proyecto sin nombre';
+        const territorio = p['1_Territorio_Indgena'] || p.territorio || p.TERRITORIO || 'No especificado';
+        
+        let catRaw = (p.Clasificacion || p.categoria || 'ICS').toUpperCase();
+        if (catRaw.includes('COMUNITARIA')) catRaw = 'ICS';
+        else if (catRaw.includes('SERVICIOS') || catRaw.includes('AGUA')) catRaw = 'ISA';
+        else if (catRaw.includes('EDUCACION')) catRaw = 'ECJ';
+        else if (catRaw.includes('TURISMO')) catRaw = 'TEP';
+        else if (catRaw.includes('SEGURIDAD')) catRaw = 'SVA';
+        else if (catRaw.includes('AYUDA')) catRaw = 'ASV';
 
-        // Registrar en el buscador general
+        const catFormateada = infoCategorias[catRaw] ? infoCategorias[catRaw].nombre : catRaw;
+        const desc = p['4_Descripcin_de_proy'] || p.descripcion || p.DESCRIPCION || 'Sin descripción detallada.';
+        const fecha = p['11_Fecha_de_visita'] || p.fecha || p.FECHA || 'N/D';
+        const desembolso = p['8_Desembolso_CREF'] || p.desembolso || p.DESEMBOLSO || 'N/D';
+
         allLayersSearch.push({ layer, type: 'punto', name: nombreProj });
 
         layer.bindPopup(`
@@ -200,7 +218,7 @@ fetch('datos/puntos.geojson')
     capaPuntosGroup.addLayer(puntosLayer);
   });
 
-// 4. Control de capas estándar de Leaflet (para encender/apagar grupos globales)
+// 4. Control de capas estándar de Leaflet (para encender/apagar grupos principales)
 L.control.layers(null, {
   "Territorios Indígenas": capaTerritoriosGroup,
   "Proyectos / Visitas": capaPuntosGroup
@@ -212,7 +230,7 @@ document.querySelectorAll('.cat-filter').forEach(checkbox => {
     const activeCategories = Array.from(document.querySelectorAll('.cat-filter:checked')).map(cb => cb.value);
 
     puntosLayersList.forEach(item => {
-      const match = activeCategories.some(cat => item.category.includes(cat));
+      const match = activeCategories.includes(item.category);
       if (match) {
         if (!capaPuntosGroup.hasLayer(item.marker)) capaPuntosGroup.addLayer(item.marker);
       } else {
@@ -222,7 +240,7 @@ document.querySelectorAll('.cat-filter').forEach(checkbox => {
   });
 });
 
-// 6. Buscador Rápido Global corregido
+// 6. Buscador Rápido Global
 document.getElementById('buscador').addEventListener('input', (e) => {
   const query = e.target.value.toLowerCase().trim();
   if (query.length < 2) return;
