@@ -7,6 +7,8 @@
   
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Chart.js para estadísticas -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
   <!-- Estilos propios -->
   <link rel="stylesheet" href="style.css">
@@ -25,7 +27,7 @@
     </div>
   </div>
 
-  <!-- Buscador rápido flotante -->
+  <!-- Buscador rápido -->
   <div class="search-container">
     <input type="text" id="buscador" placeholder="🔍 Buscar territorio o proyecto..." />
   </div>
@@ -39,7 +41,7 @@
     </select>
   </div>
 
-  <!-- Panel de Control de Capas por Categoría (Filtros visuales) -->
+  <!-- Panel de Control de Capas y Categorías -->
   <div class="layer-control-panel">
     <h4>Filtro de Proyectos</h4>
     <label><input type="checkbox" class="cat-filter" value="ICS" checked> Inf. Comunitaria y Social (ICS)</label>
@@ -50,13 +52,21 @@
     <label><input type="checkbox" class="cat-filter" value="ASV" checked> Ayuda Social y Mejoramiento (ASV)</label>
   </div>
 
+  <!-- Panel Estadístico / Línea de Tiempo (Inferior Izquierdo sobre el mapa) -->
+  <div class="stats-panel">
+    <h4>Visitas por Mes</h4>
+    <div class="chart-container">
+      <canvas id="visitasChart"></canvas>
+    </div>
+  </div>
+
   <!-- Panel Lateral Izquierdo (Ficha del Territorio) -->
   <div class="sidebar">
     <div class="header-territorio">
       <small>TERRITORIO SELECCIONADO</small>
       <h2 id="info-nombre">Haz clic en un territorio</h2>
       
-      <!-- Badges limpios corregidos -->
+      <!-- Badges limpios -->
       <div class="badges-programa">
         <span id="badge-cref" class="tag-programa tag-inactive">CREF</span>
         <span id="badge-paft" class="tag-programa tag-inactive">PAFT</span>
