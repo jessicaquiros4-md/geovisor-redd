@@ -5,7 +5,7 @@ map.createPane('paneTerritorios');
 map.getPane('paneTerritorios').style.zIndex = 400;
 
 map.createPane('panePuntos');
-map.getPane('panePuntos').style.zIndex = 650; // ¡Garantiza que los puntos queden siempre arriba y clickeables!
+map.getPane('panePuntos').style.zIndex = 650;
 
 // Mapas base
 const basemaps = {
@@ -43,7 +43,7 @@ let allLayersSearch = [];
 let puntosLayersList = [];
 let chartInstance = null;
 
-// Función para evaluar si un punto debe mostrarse según los checkboxes activos
+// Función para evaluar si un punto debe mostrarse según los checkboxes activos y el estado de la capa principal de puntos
 function actualizarFiltroPuntos() {
     const checkboxesActivos = Array.from(document.querySelectorAll('.cat-filter:checked')).map(cb => cb.value.trim().toLowerCase());
     
@@ -105,7 +105,7 @@ fetch('datos/territorios.geojson')
                             badgePaft.className = 'tag-programa tag-inactive';
                         }
 
-                        document.getElementById('info-decreto').textContent = props.DEcreto || props.DECRETO ? `Decreto ${props.DECRETO || ''} (${props.AÑO || ''})` : 'No especificado';
+                        document.getElementById('info-decreto').textContent = props.DECRETO ? `Decreto ${props.DECRETO} (${props.AÑO || ''})` : 'No especificado';
                         document.getElementById('info-bloque').textContent = props.BLOQUE || 'N/D';
 
                         document.getElementById('info-des1').textContent = props['PRIMER DESEMBOLSO'] ? `${props['PRIMER DESEMBOLSO']}` : 'N/D';
@@ -221,15 +221,14 @@ fetch('datos/puntos.geojson')
             }
         });
 
-        // Añadir puntos al grupo principal respetando los filtros iniciales
         puntosLayersList.forEach(item => capaPuntosGroup.addLayer(item.marker));
         actualizarFiltroPuntos();
     });
 
-// 4. Control de capas estándar de Leaflet (para encender/apagar grupos globales)
+// 4. Control de capas estándar de Leaflet (para encender/apagar grupos globales de forma independiente)
 L.control.layers(null, {
     "Territorios Indígenas": capaTerritoriosGroup,
-    "Proyectos / Visitas": capaPuntosGroup
+    "Proyectos Visitados": capaPuntosGroup
 }, { collapsed: false }).addTo(map);
 
 // 5. Filtrado por Checkboxes de Categorías
