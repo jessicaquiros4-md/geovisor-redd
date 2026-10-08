@@ -38,19 +38,22 @@ const coloresCategorias = {
 let allLayersSearch = [];
 let chartInstance = null;
 
-// Grupos principales para el menú de Leaflet
-const territoriosGroup = L.layerGroup().addTo(map);
-const proyectosGroup = L.layerGroup().addTo(map);
+// Contenedores jerárquicos para el menú desplegable de Leaflet
+const territoriosPorNombre = {};
+const proyectosPorCategoria = {};
 
-// Subcapas por categoría para los puntos dentro de Proyectos
-const categoriasLayers = {};
+// Control de capas dinámico inicial
+let controlCapas = L.control.layers(null, {}, { collapsed: false }).addTo(map);
 
-const overlayMaps = {
-    "Territorios Indígenas": territoriosGroup,
-    "Proyectos Visitados (Puntos)": proyectosGroup
-};
-
-let controlCapas = L.control.layers(null, overlayMaps, { collapsed: false }).addTo(map);
+function actualizarControlCapasLeaflet() {
+    if (controlCapas) {
+        controlCapas.remove();
+    }
+    controlCapas = L.control.layers(null, {
+        "Territorios Indígenas": territoriosPorNombre,
+        "Proyectos Visitados": proyectosPorCategoria
+    }, { collapsed: false }).addTo(map);
+}
 
 // 2. Cargar Territorios Indígenas
 fetch('datos/territorios.geojson')
@@ -95,15 +98,30 @@ fetch('datos/territorios.geojson')
                                 badgePaft.className = 'tag-programa tag-inactive';
                             }
 
-                            document.getElementById('info-decreto').textContent = props.DECRETO ? `Decreto ${props.DECRETO} (${props.AÑO || ''})` : 'No especificado';
+                            document.getElementById('info-decreto').textContent = props.DECRETO ? 'Decreto ' + props.DECRETO + ' (' + (props.AÑO || '') + ')' : 'No especificado';
                             document.getElementById('info-bloque').textContent = props.BLOQUE || 'N/D';
 
-                            // Mostrar el año del desembolso tal como viene en las propiedades
-                            const anioDes1 = props['PRIMER DESEMBOLSO'];
-                            const anioDes2 = props['SEGUNDO DESEMBOLSO'];
+                            // Lectura exacta usando los nombres de tus columnas
+                            const fec1 = props['fec_desemb_1'];
+                            const usd1 = props['monto_desemb_1_usd'];
+                            const crc1 = props['monto_desemb_1_crc'];
 
-                            document.getElementById('info-des1').innerHTML = anioDes1 ? `<strong style="font-size: 1.1rem; color: #0f766e;">${anioDes1}</strong><br><small style="color:#64748b;">Año de Desembolso</small>` : '<span style="color:#94a3b8;">No asignado</span>';
-                            document.getElementById('info-des2').innerHTML = anioDes2 ? `<strong style="font-size: 1.1rem; color: #0f766e;">${anioDes2}</strong><br><small style="color:#64748b;">Año de Desembolso</small>` : '<span style="color:#94a3b8;">No asignado</span>';
+                            const fec2 = props['fec_desemb_2'];
+                            const usd2 = props['monto_desemb_2_usd'];
+                            const crc2 = props['monto_desemb_2_crc'];
+
+                            const formatearDesembolso = (fec, usd, crc) => {
+                                if (!fec && usd === undefined && crc === undefined) return '<span style="color:#94a3b8;">No asignado</span>';
+                                
+                                let html = '';
+                                if (crc !== undefined && crc !== null) html += '<strong>₡' + Number(crc).toLocaleString() + '</strong><br>';
+                                if (usd !== undefined && usd !== null) html += '<small style="color:#64748b;">($' + Number(usd).toLocaleString() + ' USD)</small><br>';
+                                if (fec) html += '<span style="font-size:0.75rem; color:#0f766e; font-weight:600;">Año: ' + fec + '</span>';
+                                return html;
+                            };
+
+                            document.getElementById('info-des1').innerHTML = formatearDesembolso(fec1, usd1, crc1);
+                            document.getElementById('info-des2').innerHTML = formatearDesembolso(fec2, usd2, crc2);
 
                             document.getElementById('ae-2017').textContent = props.AE_2017 ?? '-';
                             document.getElementById('ae-2018').textContent = props.AE_2018 ?? '-';
@@ -118,8 +136,11 @@ fetch('datos/territorios.geojson')
                 }
             });
 
-            territoriosGroup.addLayer(individualLayer);
+            territoriosPorNombre[nombreTerritorio] = individualLayer;
+            individualLayer.addTo(map);
         });
+
+        actualizarControlCapasLeaflet();
     });
 
 // 3. Cargar Puntos de Proyectos
@@ -204,40 +225,36 @@ fetch('datos/puntos.geojson')
                     const catFormateada = p.Clasificacion || 'General';
                     const desc = p['4_Descripcin_de_proy'] || 'Sin descripción detallada.';
                     const inversionVal = p['5_Inversin_CREF'];
-                    const inversion = inversionVal !== undefined ? `₡${Number(inversionVal).toLocaleString()} (~$${(Number(inversionVal)/520).toFixed(2)} USD)` : 'N/D';
+                    const inversion = inversionVal !== undefined ? '₡' + Number(inversionVal).toLocaleString() + ' (~$' + (Number(inversionVal)/520).toFixed(2) + ' USD)' : 'N/D';
                     const fecha = p['11_Fecha_de_visita'] || 'N/D';
                     const desembolso = p['8_Desembolso_CREF'] || 'N/D';
                     const colaborador = p['12_Colaboradora_o'] || 'N/D';
 
                     allLayersSearch.push({ layer, type: 'punto', name: nombreProj });
 
-                    layer.bindPopup(`
-                        <div class="popup-proyecto">
-                            <h3>${nombreProj}</h3>
-                            <p><strong>Territorio:</strong> ${territorio}</p>
-                            <p><strong>Comunidad:</strong> ${comunidad}</p>
-                            <p><strong>Clasificación:</strong> ${catFormateada}</p>
-                            <p><strong>Descripción:</strong> ${desc.replace(/\n/g, '<br>')}</p>
-                            <p><strong>Inversión CREF:</strong> ${inversion}</p>
-                            <p><strong>Desembolso:</strong> ${desembolso}</p>
-                            <p><strong>Fecha de Visita:</strong> ${fecha}</p>
-                            <p><strong>Colaborador(a):</strong> ${colaborador}</p>
-                            <div class="popup-img-preview">📸 Fotografía: ${p['13_Fotografa'] || 'N/D'}</div>
-                        </div>
-                    `, { maxWidth: 320 });
+                    layer.bindPopup(
+                        '<div class="popup-proyecto">' +
+                            '<h3>' + nombreProj + '</h3>' +
+                            '<p><strong>Territorio:</strong> ' + territorio + '</p>' +
+                            '<p><strong>Comunidad:</strong> ' + comunidad + '</p>' +
+                            '<p><strong>Clasificación:</strong> ' + catFormateada + '</p>' +
+                            '<p><strong>Descripción:</strong> ' + desc.replace(/\n/g, '<br>') + '</p>' +
+                            '<p><strong>Inversión CREF:</strong> ' + inversion + '</p>' +
+                            '<p><strong>Desembolso:</strong> ' + desembolso + '</p>' +
+                            '<p><strong>Fecha de Visita:</strong> ' + fecha + '</p>' +
+                            '<p><strong>Colaborador(a):</strong> ' + colaborador + '</p>' +
+                            '<div class="popup-img-preview">📸 Fotografía: ' + (p['13_Fotografa'] || 'N/D') + '</div>' +
+                        '</div>',
+                        { maxWidth: 320 }
+                    );
                 }
             });
 
-            categoriasLayers[catName] = layerCat;
-            proyectosGroup.addLayer(layerCat);
+            proyectosPorCategoria[catName] = layerCat;
+            layerCat.addTo(map);
         });
 
-        // Actualizar el control de capas en Leaflet con las categorías independientes
-        if (controlCapas) controlCapas.remove();
-        controlCapas = L.control.layers(null, {
-            "Territorios Indígenas": territoriosGroup,
-            "Proyectos Visitados": categoriasLayers
-        }, { collapsed: false }).addTo(map);
+        actualizarControlCapasLeaflet();
     });
 
 // 4. Buscador Rápido Global corregido
