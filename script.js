@@ -38,22 +38,19 @@ const coloresCategorias = {
 let allLayersSearch = [];
 let chartInstance = null;
 
-// Contenedores jerárquicos para el menú desplegable de Leaflet
-const territoriosPorNombre = {};
-const proyectosPorCategoria = {};
+// Grupos principales para el menú de Leaflet
+const territoriosGroup = L.layerGroup().addTo(map);
+const proyectosGroup = L.layerGroup().addTo(map);
 
-// Control de capas dinámico inicial
-let controlCapas = L.control.layers(null, {}, { collapsed: false }).addTo(map);
+// Subcapas por categoría para los puntos dentro de Proyectos
+const categoriasLayers = {};
 
-function actualizarControlCapasLeaflet() {
-    if (controlCapas) {
-        controlCapas.remove();
-    }
-    controlCapas = L.control.layers(null, {
-        "Territorios Indígenas": territoriosPorNombre,
-        "Proyectos Visitados": proyectosPorCategoria
-    }, { collapsed: false }).addTo(map);
-}
+const overlayMaps = {
+    "Territorios Indígenas": territoriosGroup,
+    "Proyectos Visitados (Puntos)": proyectosGroup
+};
+
+let controlCapas = L.control.layers(null, overlayMaps, { collapsed: false }).addTo(map);
 
 // 2. Cargar Territorios Indígenas
 fetch('datos/territorios.geojson')
@@ -101,14 +98,12 @@ fetch('datos/territorios.geojson')
                             document.getElementById('info-decreto').textContent = props.DECRETO ? `Decreto ${props.DECRETO} (${props.AÑO || ''})` : 'No especificado';
                             document.getElementById('info-bloque').textContent = props.BLOQUE || 'N/D';
 
-                            // Montos en colones y conversión a dólares (tipo de cambio ref. ~520 CRC)
-                            const des1Colones = props['PRIMER DESEMBOLSO'] ? Number(props['PRIMER DESEMBOLSO']) : 0;
-                            const des2Colones = props['SEGUNDO DESEMBOLSO'] ? Number(props['SEGUNDO DESEMBOLSO']) : 0;
+                            // Mostrar el año del desembolso tal como viene en las propiedades
+                            const anioDes1 = props['PRIMER DESEMBOLSO'];
+                            const anioDes2 = props['SEGUNDO DESEMBOLSO'];
 
-                            const formatoMonto = (val) => val ? `₡${val.toLocaleString()} <br><small style="color:#64748b; font-weight:normal;">(~$${(val / 520).toFixed(2)} USD)</small>` : 'No asignado';
-
-                            document.getElementById('info-des1').innerHTML = formatoMonto(des1Colones);
-                            document.getElementById('info-des2').innerHTML = formatoMonto(des2Colones);
+                            document.getElementById('info-des1').innerHTML = anioDes1 ? `<strong style="font-size: 1.1rem; color: #0f766e;">${anioDes1}</strong><br><small style="color:#64748b;">Año de Desembolso</small>` : '<span style="color:#94a3b8;">No asignado</span>';
+                            document.getElementById('info-des2').innerHTML = anioDes2 ? `<strong style="font-size: 1.1rem; color: #0f766e;">${anioDes2}</strong><br><small style="color:#64748b;">Año de Desembolso</small>` : '<span style="color:#94a3b8;">No asignado</span>';
 
                             document.getElementById('ae-2017').textContent = props.AE_2017 ?? '-';
                             document.getElementById('ae-2018').textContent = props.AE_2018 ?? '-';
@@ -123,11 +118,8 @@ fetch('datos/territorios.geojson')
                 }
             });
 
-            territoriosPorNombre[nombreTerritorio] = individualLayer;
-            individualLayer.addTo(map);
+            territoriosGroup.addLayer(individualLayer);
         });
-
-        actualizarControlCapasLeaflet();
     });
 
 // 3. Cargar Puntos de Proyectos
@@ -136,7 +128,7 @@ fetch('datos/puntos.geojson')
     .then(data => {
         document.getElementById('kpi-visitas').textContent = data.features.length;
 
-        // Procesar gráfico de visitas por fecha exacta (DD/MM/YYYY)
+        // Gráfico de visitas por fecha exacta (DD/MM/YYYY)
         const fechasConteo = {};
         data.features.forEach(f => {
             const p = f.properties || {};
@@ -174,7 +166,7 @@ fetch('datos/puntos.geojson')
             }
         });
 
-        // Agrupar features de puntos por su categoría exacta
+        // Agrupar puntos por categoría para el menú desplegable
         const categoriasMap = {};
         data.features.forEach(feature => {
             const p = feature.properties || {};
@@ -236,11 +228,16 @@ fetch('datos/puntos.geojson')
                 }
             });
 
-            proyectosPorCategoria[catName] = layerCat;
-            layerCat.addTo(map);
+            categoriasLayers[catName] = layerCat;
+            proyectosGroup.addLayer(layerCat);
         });
 
-        actualizarControlCapasLeaflet();
+        // Actualizar el control de capas en Leaflet con las categorías independientes
+        if (controlCapas) controlCapas.remove();
+        controlCapas = L.control.layers(null, {
+            "Territorios Indígenas": territoriosGroup,
+            "Proyectos Visitados": categoriasLayers
+        }, { collapsed: false }).addTo(map);
     });
 
 // 4. Buscador Rápido Global corregido
