@@ -38,24 +38,23 @@ const coloresCategorias = {
 let allLayersSearch = [];
 let chartInstance = null;
 
-// Contenedores jerárquicos para el menú desplegable de Leaflet
-const territoriosPorNombre = {};
-const proyectosPorCategoria = {};
+// Contenedores para el menú desplegable independiente de Leaflet
+const territoriosLayers = {};
+const proyectosCategoriasLayers = {};
 
-// Control de capas dinámico inicial
 let controlCapas = L.control.layers(null, {}, { collapsed: false }).addTo(map);
 
-function actualizarControlCapasLeaflet() {
+function actualizarControlCapas() {
     if (controlCapas) {
         controlCapas.remove();
     }
     controlCapas = L.control.layers(null, {
-        "Territorios Indígenas": territoriosPorNombre,
-        "Proyectos Visitados": proyectosPorCategoria
+        ...territoriosLayers,
+        ...proyectosCategoriasLayers
     }, { collapsed: false }).addTo(map);
 }
 
-// 2. Cargar Territorios Indígenas
+// 2. Cargar Territorios Indígenas (desplegados de forma independiente por nombre)
 fetch('datos/territorios.geojson')
     .then(res => res.json())
     .then(data => {
@@ -101,7 +100,7 @@ fetch('datos/territorios.geojson')
                             document.getElementById('info-decreto').textContent = props.DECRETO ? 'Decreto ' + props.DECRETO + ' (' + (props.AÑO || '') + ')' : 'No especificado';
                             document.getElementById('info-bloque').textContent = props.BLOQUE || 'N/D';
 
-                            // Lectura exacta usando los nombres de tus columnas
+                            // Lectura exacta basada en tus columnas de desembolso
                             const fec1 = props['fec_desemb_1'];
                             const usd1 = props['monto_desemb_1_usd'];
                             const crc1 = props['monto_desemb_1_crc'];
@@ -111,12 +110,19 @@ fetch('datos/territorios.geojson')
                             const crc2 = props['monto_desemb_2_crc'];
 
                             const formatearDesembolso = (fec, usd, crc) => {
-                                if (!fec && usd === undefined && crc === undefined) return '<span style="color:#94a3b8;">No asignado</span>';
-                                
+                                if (!fec && (usd === undefined || usd === null) && (crc === undefined || crc === null)) {
+                                    return '<span style="color:#94a3b8;">No asignado</span>';
+                                }
                                 let html = '';
-                                if (crc !== undefined && crc !== null) html += '<strong>₡' + Number(crc).toLocaleString() + '</strong><br>';
-                                if (usd !== undefined && usd !== null) html += '<small style="color:#64748b;">($' + Number(usd).toLocaleString() + ' USD)</small><br>';
-                                if (fec) html += '<span style="font-size:0.75rem; color:#0f766e; font-weight:600;">Año: ' + fec + '</span>';
+                                if (crc !== undefined && crc !== null && crc !== '') {
+                                    html += '<strong>₡' + Number(crc).toLocaleString() + '</strong><br>';
+                                }
+                                if (usd !== undefined && usd !== null && usd !== '') {
+                                    html += '<small style="color:#64748b;">($' + Number(usd).toLocaleString() + ' USD)</small><br>';
+                                }
+                                if (fec) {
+                                    html += '<span style="font-size:0.75rem; color:#0f766e; font-weight:600;">Año: ' + fec + '</span>';
+                                }
                                 return html;
                             };
 
@@ -136,14 +142,15 @@ fetch('datos/territorios.geojson')
                 }
             });
 
-            territoriosPorNombre[nombreTerritorio] = individualLayer;
+            // Añadir al control de capas bajo la categoría visual de Territorios
+            territoriosLayers['📁 Territorio: ' + nombreTerritorio] = individualLayer;
             individualLayer.addTo(map);
         });
 
-        actualizarControlCapasLeaflet();
+        actualizarControlCapas();
     });
 
-// 3. Cargar Puntos de Proyectos
+// 3. Cargar Puntos de Proyectos (agrupados por categorías para filtrado independiente)
 fetch('datos/puntos.geojson')
     .then(res => res.json())
     .then(data => {
@@ -187,7 +194,7 @@ fetch('datos/puntos.geojson')
             }
         });
 
-        // Agrupar puntos por categoría para el menú desplegable
+        // Agrupar features de puntos por categoría
         const categoriasMap = {};
         data.features.forEach(feature => {
             const p = feature.properties || {};
@@ -250,11 +257,11 @@ fetch('datos/puntos.geojson')
                 }
             });
 
-            proyectosPorCategoria[catName] = layerCat;
+            proyectosCategoriasLayers['📍 Proyecto: ' + catName] = layerCat;
             layerCat.addTo(map);
         });
 
-        actualizarControlCapasLeaflet();
+        actualizarControlCapas();
     });
 
 // 4. Buscador Rápido Global corregido
