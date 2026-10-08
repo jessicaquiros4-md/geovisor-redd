@@ -38,19 +38,14 @@ const coloresCategorias = {
 let allLayersSearch = [];
 let chartInstance = null;
 
-// Contenedores para el control de capas jerárquico de Leaflet
+// Contenedores para el menú desplegable jerárquico de Leaflet
 const territoriosPorNombre = {};
 const proyectosPorCategoria = {};
 
-// Objeto principal que manejará el control de capas de Leaflet
-const overlayMaps = {
-    "Territorios Indígenas": territoriosPorNombre,
-    "Proyectos Visitados": proyectosPorCategoria
-};
+// Control de capas dinámico
+let controlCapas = L.control.layers(null, {}, { collapsed: false }).addTo(map);
 
-const controlCapas = L.control.layers(null, overlayMaps, { collapsed: false }).addTo(map);
-
-// 2. Cargar Territorios Indígenas (Cada uno con su capa independiente para el menú)
+// 2. Cargar Territorios Indígenas
 fetch('datos/territorios.geojson')
     .then(res => res.json())
     .then(data => {
@@ -96,14 +91,14 @@ fetch('datos/territorios.geojson')
                             document.getElementById('info-decreto').textContent = props.DECRETO ? `Decreto ${props.DECRETO} (${props.AÑO || ''})` : 'No especificado';
                             document.getElementById('info-bloque').textContent = props.BLOQUE || 'N/D';
 
-                            // Montos en colones y conversión estimada a dólares (ej. tipo de cambio 520 colones por dólar o según tus datos)
+                            // Montos en colones y dólares (asumiendo tipo de cambio aproximado de 520 CRC por USD)
                             const des1Colones = props['PRIMER DESEMBOLSO'] ? Number(props['PRIMER DESEMBOLSO']) : 0;
                             const des2Colones = props['SEGUNDO DESEMBOLSO'] ? Number(props['SEGUNDO DESEMBOLSO']) : 0;
                             
-                            const formatoMonto = (val) => val ? `₡${val.toLocaleString()} (~$${(val / 520).toFixed(2)})` : 'N/D';
+                            const formatoMonto = (val) => val ? `₡${val.toLocaleString()} <br><small style="color:#64748b;">(~$${(val / 520).toFixed(2)})</small>` : 'No asignado';
 
-                            document.getElementById('info-des1').textContent = formatoMonto(des1Colones);
-                            document.getElementById('info-des2').textContent = formatoMonto(des2Colones);
+                            document.getElementById('info-des1').innerHTML = formatoMonto(des1Colones);
+                            document.getElementById('info-des2').innerHTML = formatoMonto(des2Colones);
 
                             document.getElementById('ae-2017').textContent = props.AE_2017 ?? '-';
                             document.getElementById('ae-2018').textContent = props.AE_2018 ?? '-';
@@ -118,26 +113,20 @@ fetch('datos/territorios.geojson')
                 }
             });
 
-            // Añadir al control desplegable por nombre
             territoriosPorNombre[nombreTerritorio] = individualLayer;
             individualLayer.addTo(map);
         });
 
-        // Actualizar control de capas en Leaflet
-        controlCapas.remove();
-        L.control.layers(null, {
-            "Territorios Indígenas": territoriosPorNombre,
-            "Proyectos Visitados": proyectosPorCategoria
-        }, { collapsed: false }).addTo(map);
+        actualizarMenuCapas();
     });
 
-// 3. Cargar Puntos de Proyectos (Agrupados por categoría para el menú de Leaflet)
+// 3. Cargar Puntos de Proyectos
 fetch('datos/puntos.geojson')
     .then(res => res.json())
     .then(data => {
         document.getElementById('kpi-visitas').textContent = data.features.length;
 
-        // Procesar gráfico de visitas por fecha exacta (DD/MM/YYYY)
+        // Gráfico de visitas por fecha exacta (DD/MM/YYYY)
         const fechasConteo = {};
         data.features.forEach(f => {
             const p = f.properties || {};
@@ -186,7 +175,6 @@ fetch('datos/puntos.geojson')
             categoriasMap[catRaw].push(feature);
         });
 
-        // Crear una capa L.geoJSON por cada categoría para que aparezca independiente en el menú
         Object.keys(categoriasMap).forEach(catName => {
             const featuresCat = categoriasMap[catName];
             
@@ -237,18 +225,23 @@ fetch('datos/puntos.geojson')
                 }
             });
 
-            // Asignar al subgrupo de proyectos
             proyectosPorCategoria[catName] = layerCat;
             layerCat.addTo(map);
         });
 
-        // Refrescar el control de capas en Leaflet
-        controlCapas.remove();
-        L.control.layers(null, {
-            "Territorios Indígenas": territoriosPorNombre,
-            "Proyectos Visitados": proyectosPorCategoria
-        }, { collapsed: false }).addTo(map);
+        actualizarMenuCapas();
     });
+
+// Función para refrescar el control de capas en Leaflet ordenadamente
+function actualizarMenuCapas() {
+    if (controlCapas) {
+        controlCapas.remove();
+    }
+    controlCapas = L.control.layers(null, {
+        "Territorios Indígenas": territoriosPorNombre,
+        "Proyectos Visitados": proyectosPorCategoria
+    }, { collapsed: false }).addTo(map);
+}
 
 // 4. Buscador Rápido Global corregido
 document.getElementById('buscador').addEventListener('input', (e) => {
