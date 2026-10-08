@@ -43,6 +43,26 @@ let allLayersSearch = [];
 let puntosLayersList = [];
 let chartInstance = null;
 
+// Función para evaluar si un punto debe mostrarse según los checkboxes activos
+function actualizarFiltroPuntos() {
+    const checkboxesActivos = Array.from(document.querySelectorAll('.cat-filter:checked')).map(cb => cb.value.trim().toLowerCase());
+    
+    puntosLayersList.forEach(item => {
+        const categoriaPunto = (item.category || '').trim().toLowerCase();
+        const coincide = checkboxesActivos.some(cat => categoriaPunto.includes(cat));
+
+        if (coincide) {
+            if (!capaPuntosGroup.hasLayer(item.marker)) {
+                capaPuntosGroup.addLayer(item.marker);
+            }
+        } else {
+            if (capaPuntosGroup.hasLayer(item.marker)) {
+                capaPuntosGroup.removeLayer(item.marker);
+            }
+        }
+    });
+}
+
 // 2. Cargar Territorios Indígenas
 fetch('datos/territorios.geojson')
     .then(res => res.json())
@@ -85,9 +105,8 @@ fetch('datos/territorios.geojson')
                             badgePaft.className = 'tag-programa tag-inactive';
                         }
 
-                        document.getElementById('info-decreto').textContent = props.DECRETO ? `Decreto ${props.DECRETO} (${props.AÑO || ''})` : 'No especificado';
+                        document.getElementById('info-decreto').textContent = props.DEcreto || props.DECRETO ? `Decreto ${props.DECRETO || ''} (${props.AÑO || ''})` : 'No especificado';
                         document.getElementById('info-bloque').textContent = props.BLOQUE || 'N/D';
-                        document.getElementById('info-clasif').textContent = props.CLASIF || 'N/D';
 
                         document.getElementById('info-des1').textContent = props['PRIMER DESEMBOLSO'] ? `${props['PRIMER DESEMBOLSO']}` : 'N/D';
                         document.getElementById('info-des2').textContent = props['SEGUNDO DESEMBOLSO'] ? `${props['SEGUNDO DESEMBOLSO']}` : 'N/D';
@@ -113,22 +132,18 @@ fetch('datos/puntos.geojson')
     .then(data => {
         document.getElementById('kpi-visitas').textContent = data.features.length;
 
-        // Procesar gráfico de visitas por mes basado en fechas reales (DD/MM/YYYY)
-        const mesesConteo = {};
+        // Procesar gráfico de visitas por fecha exacta (DD/MM/YYYY)
+        const fechasConteo = {};
         data.features.forEach(f => {
             const p = f.properties || {};
-            const fechaStr = p['11_Fecha_de_visita'] || '';
-            if (fechaStr && fechaStr.includes('/')) {
-                const partes = fechaStr.split('/');
-                if (partes.length === 3) {
-                    const mesAnio = `${partes[2]}-${partes[1]}`; // YYYY-MM
-                    mesesConteo[mesAnio] = (mesesConteo[mesAnio] || 0) + 1;
-                }
+            const fechaStr = (p['11_Fecha_de_visita'] || '').trim();
+            if (fechaStr) {
+                fechasConteo[fechaStr] = (fechasConteo[fechaStr] || 0) + 1;
             }
         });
 
-        const mesesOrdenados = Object.keys(mesesConteo).sort();
-        const valoresVisitas = mesesOrdenados.map(m => mesesConteo[m]);
+        const fechasOrdenadas = Object.keys(fechasConteo).sort();
+        const valoresVisitas = fechasOrdenadas.map(f => fechasConteo[f]);
 
         const ctx = document.getElementById('visitasChart').getContext('2d');
         if (chartInstance) chartInstance.destroy();
@@ -136,7 +151,7 @@ fetch('datos/puntos.geojson')
         chartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: mesesOrdenados.length ? mesesOrdenados : ['Sin fechas válidas'],
+                labels: fechasOrdenadas.length ? fechasOrdenadas : ['Sin fechas válidas'],
                 datasets: [{
                     label: 'Visitas',
                     data: valoresVisitas.length ? valoresVisitas : [0],
@@ -150,7 +165,7 @@ fetch('datos/puntos.geojson')
                 plugins: { legend: { display: false } },
                 scales: {
                     y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } } },
-                    x: { ticks: { font: { size: 10 } } }
+                    x: { ticks: { font: { size: 9 }, maxRotation: 45, minRotation: 45 } }
                 }
             }
         });
@@ -205,7 +220,10 @@ fetch('datos/puntos.geojson')
                 `, { maxWidth: 320 });
             }
         });
-        capaPuntosGroup.addLayer(puntosLayer);
+
+        // Añadir puntos al grupo principal respetando los filtros iniciales
+        puntosLayersList.forEach(item => capaPuntosGroup.addLayer(item.marker));
+        actualizarFiltroPuntos();
     });
 
 // 4. Control de capas estándar de Leaflet (para encender/apagar grupos globales)
@@ -217,16 +235,7 @@ L.control.layers(null, {
 // 5. Filtrado por Checkboxes de Categorías
 document.querySelectorAll('.cat-filter').forEach(checkbox => {
     checkbox.addEventListener('change', () => {
-        const activeCategories = Array.from(document.querySelectorAll('.cat-filter:checked')).map(cb => cb.value.trim().toLowerCase());
-
-        puntosLayersList.forEach(item => {
-            const match = activeCategories.some(cat => item.category.includes(cat));
-            if (match) {
-                if (!capaPuntosGroup.hasLayer(item.marker)) capaPuntosGroup.addLayer(item.marker);
-            } else {
-                if (capaPuntosGroup.hasLayer(item.marker)) capaPuntosGroup.removeLayer(item.marker);
-            }
-        });
+        actualizarFiltroPuntos();
     });
 });
 
