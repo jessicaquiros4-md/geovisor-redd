@@ -38,16 +38,16 @@ const coloresCategorias = {
 let allLayersSearch = [];
 let chartInstance = null;
 
-// Grupos principales para el menú desplegable anidado en Leaflet
-const territoriosGroup = L.layerGroup();
-const proyectosGroup = L.layerGroup();
+// Grupos principales para el menú de Leaflet
+const capaTerritoriosGroup = L.layerGroup().addTo(map);
+const capaProyectosGroup = L.layerGroup().addTo(map);
 
-const territoriosPorNombre = {};
-const proyectosPorCategoria = {};
+// Subcapas de categorías independientes para los proyectos dentro de su grupo
+const categoriasProyectos = {};
 
-let controlCapas = L.control.layers(null, {
-    "Territorios Indígenas": territoriosPorNombre,
-    "Proyectos Visitados": proyectosPorCategoria
+const controlCapas = L.control.layers(null, {
+    "Territorios Indígenas": capaTerritoriosGroup,
+    "Proyectos Visitados": capaProyectosGroup
 }, { collapsed: false }).addTo(map);
 
 // 2. Cargar Territorios Indígenas
@@ -56,94 +56,88 @@ fetch('datos/territorios.geojson')
     .then(data => {
         document.getElementById('kpi-territorios').textContent = data.features.length;
 
-        data.features.forEach(feature => {
-            const props = feature.properties || {};
-            const nombreTerritorio = props.TERRITORIO || 'Territorio Indígena';
+        const geoLayer = L.geoJSON(data, {
+            style: estiloNormal,
+            pane: 'paneTerritorios',
+            onEachFeature: (feature, layer) => {
+                const props = feature.properties || {};
+                const nombreTerritorio = props.TERRITORIO || 'Territorio Indígena';
 
-            const individualLayer = L.geoJSON(feature, {
-                style: estiloNormal,
-                pane: 'paneTerritorios',
-                onEachFeature: (feat, layer) => {
-                    allLayersSearch.push({ layer, type: 'territorio', name: nombreTerritorio });
+                allLayersSearch.push({ layer, type: 'territorio', name: nombreTerritorio });
 
-                    layer.on({
-                        mouseover: (e) => { e.target.setStyle(estiloHover); e.target.bringToFront(); },
-                        mouseout: (e) => { individualLayer.resetStyle(e.target); },
-                        click: (e) => {
-                            map.fitBounds(e.target.getBounds(), { padding: [40, 40] });
-                            document.getElementById('info-nombre').textContent = nombreTerritorio;
+                layer.on({
+                    mouseover: (e) => { e.target.setStyle(estiloHover); e.target.bringToFront(); },
+                    mouseout: (e) => { geoLayer.resetStyle(e.target); },
+                    click: (e) => {
+                        map.fitBounds(e.target.getBounds(), { padding: [40, 40] });
+                        document.getElementById('info-nombre').textContent = nombreTerritorio;
 
-                            const clasif = (props.CLASIF || '').toUpperCase();
-                            const badgeCref = document.getElementById('badge-cref');
-                            const badgePaft = document.getElementById('badge-paft');
+                        const clasif = (props.CLASIF || '').toUpperCase();
+                        const badgeCref = document.getElementById('badge-cref');
+                        const badgePaft = document.getElementById('badge-paft');
 
-                            if (clasif.includes('CREF')) {
-                                badgeCref.textContent = 'CREF: Sí';
-                                badgeCref.className = 'tag-programa tag-active';
-                            } else {
-                                badgeCref.textContent = 'CREF: No';
-                                badgeCref.className = 'tag-programa tag-inactive';
-                            }
-
-                            if (clasif.includes('PAFT')) {
-                                badgePaft.textContent = 'PAFT: Sí';
-                                badgePaft.className = 'tag-programa tag-active';
-                            } else {
-                                badgePaft.textContent = 'PAFT: No';
-                                badgePaft.className = 'tag-programa tag-inactive';
-                            }
-
-                            document.getElementById('info-decreto').textContent = props.DECRETO ? 'Decreto ' + props.DECRETO + ' (' + (props.AÑO || '') + ')' : 'No especificado';
-                            document.getElementById('info-bloque').textContent = props.BLOQUE || 'N/D';
-
-                            // Lectura de desembolsos según las columnas exactas
-                            const fec1 = props['fec_desemb_1'];
-                            const usd1 = props['monto_desemb_1_usd'];
-                            const crc1 = props['monto_desemb_1_crc'];
-
-                            const fec2 = props['fec_desemb_2'];
-                            const usd2 = props['monto_desemb_2_usd'];
-                            const crc2 = props['monto_desemb_2_crc'];
-
-                            const formatearDesembolso = (fec, usd, crc) => {
-                                if (!fec && (usd === undefined || usd === null) && (crc === undefined || crc === null)) {
-                                    return '<span style="color:#94a3b8;">No asignado</span>';
-                                }
-                                let html = '';
-                                if (crc !== undefined && crc !== null && crc !== '') {
-                                    html += '<strong>₡' + Number(crc).toLocaleString() + '</strong><br>';
-                                }
-                                if (usd !== undefined && usd !== null && usd !== '') {
-                                    html += '<small style="color:#64748b;">($' + Number(usd).toLocaleString() + ' USD)</small><br>';
-                                }
-                                if (fec) {
-                                    html += '<span style="font-size:0.75rem; color:#0f766e; font-weight:600;">Año: ' + fec + '</span>';
-                                }
-                                return html;
-                            };
-
-                            document.getElementById('info-des1').innerHTML = formatearDesembolso(fec1, usd1, crc1);
-                            document.getElementById('info-des2').innerHTML = formatearDesembolso(fec2, usd2, crc2);
-
-                            document.getElementById('ae-2017').textContent = props.AE_2017 ?? '-';
-                            document.getElementById('ae-2018').textContent = props.AE_2018 ?? '-';
-                            document.getElementById('ae-2019').textContent = props.AE_2019 ?? '-';
-                            document.getElementById('ae-2020').textContent = props.AE_2020 ?? '-';
-                            document.getElementById('ae-2021').textContent = props.AE_2021 ?? '-';
-                            document.getElementById('ae-2022').textContent = props.AE_2022 ?? '-';
-                            document.getElementById('ae-2023').textContent = props.AE_2023 ?? '-';
-                            document.getElementById('ae-2024').textContent = props.AE_2024 ?? '-';
+                        if (clasif.includes('CREF')) {
+                            badgeCref.textContent = 'CREF: Sí';
+                            badgeCref.className = 'tag-programa tag-active';
+                        } else {
+                            badgeCref.textContent = 'CREF: No';
+                            badgeCref.className = 'tag-programa tag-inactive';
                         }
-                    });
-                }
-            });
 
-            territoriosPorNombre[nombreTerritorio] = individualLayer;
-            territoriosGroup.addLayer(individualLayer);
+                        if (clasif.includes('PAFT')) {
+                            badgePaft.textContent = 'PAFT: Sí';
+                            badgePaft.className = 'tag-programa tag-active';
+                        } else {
+                            badgePaft.textContent = 'PAFT: No';
+                            badgePaft.className = 'tag-programa tag-inactive';
+                        }
+
+                        document.getElementById('info-decreto').textContent = props.DECRETO ? 'Decreto ' + props.DECRETO + ' (' + (props.AÑO || '') + ')' : 'No especificado';
+                        document.getElementById('info-bloque').textContent = props.BLOQUE || 'N/D';
+
+                        // Enlace exacto con las columnas de desembolso de tu base de datos
+                        const fec1 = props['fec_desemb_1'];
+                        const usd1 = props['monto_desemb_1_usd'];
+                        const crc1 = props['monto_desemb_1_crc'];
+
+                        const fec2 = props['fec_desemb_2'];
+                        const usd2 = props['monto_desemb_2_usd'];
+                        const crc2 = props['monto_desemb_2_crc'];
+
+                        const formatearDesembolso = (fec, usd, crc) => {
+                            if (!fec && (usd === undefined || usd === null) && (crc === undefined || crc === null)) {
+                                return '<span style="color:#94a3b8;">No asignado</span>';
+                            }
+                            let html = '';
+                            if (crc !== undefined && crc !== null && crc !== '') {
+                                html += '<strong>₡' + Number(crc).toLocaleString() + '</strong><br>';
+                            }
+                            if (usd !== undefined && usd !== null && usd !== '') {
+                                html += '<small style="color:#64748b;">($' + Number(usd).toLocaleString() + ' USD)</small><br>';
+                            }
+                            if (fec) {
+                                html += '<span style="font-size:0.75rem; color:#0f766e; font-weight:600;">Año: ' + fec + '</span>';
+                            }
+                            return html;
+                        };
+
+                        document.getElementById('info-des1').innerHTML = formatearDesembolso(fec1, usd1, crc1);
+                        document.getElementById('info-des2').innerHTML = formatearDesembolso(fec2, usd2, crc2);
+
+                        document.getElementById('ae-2017').textContent = props.AE_2017 ?? '-';
+                        document.getElementById('ae-2018').textContent = props.AE_2018 ?? '-';
+                        document.getElementById('ae-2019').textContent = props.AE_2019 ?? '-';
+                        document.getElementById('ae-2020').textContent = props.AE_2020 ?? '-';
+                        document.getElementById('ae-2021').textContent = props.AE_2021 ?? '-';
+                        document.getElementById('ae-2022').textContent = props.AE_2022 ?? '-';
+                        document.getElementById('ae-2023').textContent = props.AE_2023 ?? '-';
+                        document.getElementById('ae-2024').textContent = props.AE_2024 ?? '-';
+                    }
+                });
+            }
         });
 
-        territoriosGroup.addTo(map);
-        actualizarControlCapas();
+        capaTerritoriosGroup.addLayer(geoLayer);
     });
 
 // 3. Cargar Puntos de Proyectos
@@ -234,7 +228,7 @@ fetch('datos/puntos.geojson')
 
                     allLayersSearch.push({ layer, type: 'punto', name: nombreProj });
 
-                    // Popup sin colaborador
+                    // Popup de proyectos limpio (sin colaborador)
                     layer.bindPopup(
                         '<div class="popup-proyecto">' +
                             '<h3>' + nombreProj + '</h3>' +
@@ -252,23 +246,10 @@ fetch('datos/puntos.geojson')
                 }
             });
 
-            proyectosPorCategoria[catName] = layerCat;
-            proyectosGroup.addLayer(layerCat);
+            categoriasProyectos[catName] = layerCat;
+            capaProyectosGroup.addLayer(layerCat);
         });
-
-        proyectosGroup.addTo(map);
-        actualizarControlCapas();
     });
-
-function actualizarControlCapas() {
-    if (controlCapas) {
-        controlCapas.remove();
-    }
-    controlCapas = L.control.layers(null, {
-        "Territorios Indígenas": territoriosPorNombre,
-        "Proyectos Visitados": proyectosPorCategoria
-    }, { collapsed: false }).addTo(map);
-}
 
 // 4. Buscador Rápido Global corregido
 document.getElementById('buscador').addEventListener('input', (e) => {
