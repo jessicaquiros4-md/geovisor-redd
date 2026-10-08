@@ -1,274 +1,227 @@
-// 1. Inicializar mapa y Panes para garantizar orden de capas (Z-Index estricto)
-const map = L.map('map').setView([9.25, -83.25], 9);
+<!DOCTYPE html><html lang="es"><head>
 
-map.createPane('paneTerritorios');
-map.getPane('paneTerritorios').style.zIndex = 400;
+<meta charset="UTF-8">
 
-map.createPane('panePuntos');
-map.getPane('panePuntos').style.zIndex = 650;
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-// Mapas base
-const basemaps = {
-    osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }),
-    carto: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19, attribution: '&copy; CARTO' }),
-    esri: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: '&copy; Esri' })
-};
+<title>Geovisor REDD+ - Territorios y Proyectos</title>
 
-basemaps.osm.addTo(map);
 
-document.getElementById('select-basemap').addEventListener('change', (e) => {
-    Object.values(basemaps).forEach(layer => map.removeLayer(layer));
-    basemaps[e.target.value].addTo(map);
-});
 
-const estiloNormal = { color: '#0f766e', weight: 1.5, fillColor: '#14b8a6', fillOpacity: 0.35, pane: 'paneTerritorios' };
-const estiloHover = { color: '#0f766e', weight: 3, fillColor: '#2dd4bf', fillOpacity: 0.55, pane: 'paneTerritorios' };
+<!-- Leaflet CSS -->
 
-// Colores según las clasificaciones exactas de tus puntos
-const coloresCategorias = {
-    "infraestructura comunitaria y social": "#2563eb",
-    "infraestructura de servicios basicos": "#dc2626",
-    "educacion, cultura y juventud": "#d97706",
-    "turismo sostenible y emprendimientos productivos ": "#16a34a",
-    "turismo sostenible y emprendimientos productivos": "#16a34a",
-    "seguridad, vigilancia y gestion ambiental": "#9333ea",
-    "ayuda social y mejoramiento de infraestructura": "#db2777"
-};
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-let allLayersSearch = [];
-let chartInstance = null;
+<!-- Chart.js para estadísticas -->
 
-// Contenedores jerárquicos para el menú desplegable de Leaflet
-const territoriosPorNombre = {};
-const proyectosPorCategoria = {};
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-// Control de capas dinámico inicial
-let controlCapas = L.control.layers(null, {}, { collapsed: false }).addTo(map);
 
-function actualizarControlCapasLeaflet() {
-    if (controlCapas) {
-        controlCapas.remove();
-    }
-    controlCapas = L.control.layers(null, {
-        "Territorios Indígenas": territoriosPorNombre,
-        "Proyectos Visitados": proyectosPorCategoria
-    }, { collapsed: false }).addTo(map);
-}
 
-// 2. Cargar Territorios Indígenas
-fetch('datos/territorios.geojson')
-    .then(res => res.json())
-    .then(data => {
-        document.getElementById('kpi-territorios').textContent = data.features.length;
+<!-- Estilos propios -->
 
-        data.features.forEach(feature => {
-            const props = feature.properties || {};
-            const nombreTerritorio = props.TERRITORIO || 'Territorio Indígena';
+<link rel="stylesheet" href="style.css"></head><body>
 
-            const individualLayer = L.geoJSON(feature, {
-                style: estiloNormal,
-                pane: 'paneTerritorios',
-                onEachFeature: (feat, layer) => {
-                    allLayersSearch.push({ layer, type: 'territorio', name: nombreTerritorio });
 
-                    layer.on({
-                        mouseover: (e) => { e.target.setStyle(estiloHover); e.target.bringToFront(); },
-                        mouseout: (e) => { individualLayer.resetStyle(e.target); },
-                        click: (e) => {
-                            map.fitBounds(e.target.getBounds(), { padding: [40, 40] });
-                            document.getElementById('info-nombre').textContent = nombreTerritorio;
 
-                            const clasif = (props.CLASIF || '').toUpperCase();
-                            const badgeCref = document.getElementById('badge-cref');
-                            const badgePaft = document.getElementById('badge-paft');
+<!-- KPI Cards Superiores -->
 
-                            if (clasif.includes('CREF')) {
-                                badgeCref.textContent = 'CREF: Sí';
-                                badgeCref.className = 'tag-programa tag-active';
-                            } else {
-                                badgeCref.textContent = 'CREF: No';
-                                badgeCref.className = 'tag-programa tag-inactive';
-                            }
+<div id="kpi-panel" class="kpi-container">
 
-                            if (clasif.includes('PAFT')) {
-                                badgePaft.textContent = 'PAFT: Sí';
-                                badgePaft.className = 'tag-programa tag-active';
-                            } else {
-                                badgePaft.textContent = 'PAFT: No';
-                                badgePaft.className = 'tag-programa tag-inactive';
-                            }
+<div class="kpi-card">
 
-                            document.getElementById('info-decreto').textContent = props.DECRETO ? `Decreto ${props.DECRETO} (${props.AÑO || ''})` : 'No especificado';
-                            document.getElementById('info-bloque').textContent = props.BLOQUE || 'N/D';
+<span class="kpi-title">Territorios</span>
 
-                            // Lectura de los campos exactos de desembolso según tu imagen
-                            const fec1 = props['fec_desemb_1'];
-                            const usd1 = props['monto_desemb_1_usd'];
-                            const crc1 = props['monto_desemb_1_crc'];
+<span id="kpi-territorios" class="kpi-value">0</span>
 
-                            const fec2 = props['fec_desemb_2'];
-                            const usd2 = props['monto_desemb_2_usd'];
-                            const crc2 = props['monto_desemb_2_crc'];
+</div>
 
-                            const formatearDesembolso = (fec, usd, crc) => {
-                                if (!fec && usd === undefined && crc === undefined) return '<span style="color:#94a3b8;">No asignado</span>';
-                                
-                                let html = '';
-                                if (crc !== undefined && crc !== null) html += `<strong>₡${Number(crc).toLocaleString()}</strong><br>`;
-                                if (usd !== undefined && usd !== null) html += `<small style="color:#64748b;">($${Number(usd).toLocaleString()} USD)</small><br>`;
-                                if (fec) html += `<span style="font-size:0.75rem; color:#0f766e; font-weight:600;">Año: ${fec}</span>`;
-                                return html;
-                            };
+<div class="kpi-card">
 
-                            document.getElementById('info-des1').innerHTML = formatearDesembolso(fec1, usd1, crc1);
-                            document.getElementById('info-des2').innerHTML = formatearDesembolso(fec2, usd2, crc2);
+<span class="kpi-title">Visitas / Proyectos</span>
 
-                            document.getElementById('ae-2017').textContent = props.AE_2017 ?? '-';
-                            document.getElementById('ae-2018').textContent = props.AE_2018 ?? '-';
-                            document.getElementById('ae-2019').textContent = props.AE_2019 ?? '-';
-                            document.getElementById('ae-2020').textContent = props.AE_2020 ?? '-';
-                            document.getElementById('ae-2021').textContent = props.AE_2021 ?? '-';
-                            document.getElementById('ae-2022').textContent = props.AE_2022 ?? '-';
-                            document.getElementById('ae-2023').textContent = props.AE_2023 ?? '-';
-                            document.getElementById('ae-2024').textContent = props.AE_2024 ?? '-';
-                        }
-                    });
-                }
-            });
+<span id="kpi-visitas" class="kpi-value">0</span>
 
-            territoriosPorNombre[nombreTerritorio] = individualLayer;
-            individualLayer.addTo(map);
-        });
+</div>
 
-        actualizarControlCapasLeaflet();
-    });
+</div>
 
-// 3. Cargar Puntos de Proyectos
-fetch('datos/puntos.geojson')
-    .then(res => res.json())
-    .then(data => {
-        document.getElementById('kpi-visitas').textContent = data.features.length;
 
-        // Gráfico de visitas por fecha exacta (DD/MM/YYYY)
-        const fechasConteo = {};
-        data.features.forEach(f => {
-            const p = f.properties || {};
-            const fechaStr = (p['11_Fecha_de_visita'] || '').trim();
-            if (fechaStr) {
-                fechasConteo[fechaStr] = (fechasConteo[fechaStr] || 0) + 1;
-            }
-        });
 
-        const fechasOrdenadas = Object.keys(fechasConteo).sort();
-        const valoresVisitas = fechasOrdenadas.map(f => fechasConteo[f]);
+<!-- Buscador rápido -->
 
-        const ctx = document.getElementById('visitasChart').getContext('2d');
-        if (chartInstance) chartInstance.destroy();
+<div class="search-container">
 
-        chartInstance = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: fechasOrdenadas.length ? fechasOrdenadas : ['Sin fechas válidas'],
-                datasets: [{
-                    label: 'Visitas',
-                    data: valoresVisitas.length ? valoresVisitas : [0],
-                    backgroundColor: '#0f766e',
-                    borderRadius: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } } },
-                    x: { ticks: { font: { size: 9 }, maxRotation: 45, minRotation: 45 } }
-                }
-            }
-        });
+<input type="text" id="buscador" placeholder="🔍 Buscar territorio o proyecto..." />
 
-        // Agrupar puntos por categoría para el menú desplegable
-        const categoriasMap = {};
-        data.features.forEach(feature => {
-            const p = feature.properties || {};
-            const catRaw = (p.Clasificacion || 'General').trim();
-            if (!categoriasMap[catRaw]) {
-                categoriasMap[catRaw] = [];
-            }
-            categoriasMap[catRaw].push(feature);
-        });
+</div>
 
-        Object.keys(categoriasMap).forEach(catName => {
-            const featuresCat = categoriasMap[catName];
-            
-            const layerCat = L.geoJSON({ type: "FeatureCollection", features: featuresCat }, {
-                pointToLayer: (feature, latlng) => {
-                    const p = feature.properties || {};
-                    const catKey = (p.Clasificacion || '').trim().toLowerCase();
-                    const color = coloresCategorias[catKey] || '#0f766e';
 
-                    return L.circleMarker(latlng, {
-                        radius: 8,
-                        fillColor: color,
-                        color: '#ffffff',
-                        weight: 2,
-                        fillOpacity: 0.95,
-                        pane: 'panePuntos'
-                    });
-                },
-                onEachFeature: (feature, layer) => {
-                    const p = feature.properties || {};
 
-                    const nombreProj = p['3_Nombre_de_Proyecto'] || 'Proyecto sin nombre';
-                    const territorio = p['1_Territorio_Indgena'] || 'No especificado';
-                    const comunidad = p['6_Comunidad_TI'] || 'N/D';
-                    const catFormateada = p.Clasificacion || 'General';
-                    const desc = p['4_Descripcin_de_proy'] || 'Sin descripción detallada.';
-                    const inversionVal = p['5_Inversin_CREF'];
-                    const inversion = inversionVal !== undefined ? `₡${Number(inversionVal).toLocaleString()} (~$${(Number(inversionVal)/520).toFixed(2)} USD)` : 'N/D';
-                    const fecha = p['11_Fecha_de_visita'] || 'N/D';
-                    const desembolso = p['8_Desembolso_CREF'] || 'N/D';
-                    const colaborador = p['12_Colaboradora_o'] || 'N/D';
+<!-- Selector de Mapa Base -->
 
-                    allLayersSearch.push({ layer, type: 'punto', name: nombreProj });
+<div class="basemap-selector">
 
-                    layer.bindPopup(`
-                        <div class="popup-proyecto">
-                            <h3>${nombreProj}</h3>
-                            <p><strong>Territorio:</strong> ${territorio}</p>
-                            <p><strong>Comunidad:</strong> ${comunidad}</p>
-                            <p><strong>Clasificación:</strong> ${catFormateada}</p>
-                            <p><strong>Descripción:</strong> ${desc.replace(/\n/g, '<br>')}</p>
-                            <p><strong>Inversión CREF:</strong> ${inversion}</p>
-                            <p><strong>Desembolso:</strong> ${desembolso}</p>
-                            <p><strong>Fecha de Visita:</strong> ${fecha}</p>
-                            <p><strong>Colaborador(a):</strong> ${colaborador}</p>
-                            <div class="popup-img-preview">📸 Fotografía: ${p['13_Fotografa'] || 'N/D'}</div>
-                        </div>
-                    `, { maxWidth: 320 });
-                }
-            });
+<select id="select-basemap">
 
-            proyectosPorCategoria[catName] = layerCat;
-            layerCat.addTo(map);
-        });
+<option value="osm">Mapa Estándar (OSM)</option>
 
-        actualizarControlCapasLeaflet();
-    });
+<option value="carto">Gris Limpio (CartoDB)</option>
 
-// 4. Buscador Rápido Global corregido
-document.getElementById('buscador').addEventListener('input', (e) => {
-    const query = e.target.value.toLowerCase().trim();
-    if (query.length < 2) return;
+<option value="esri">Satélite (Esri)</option>
 
-    const match = allLayersSearch.find(item => item.name && item.name.toLowerCase().includes(query));
-    if (match) {
-        if (match.type === 'territorio') {
-            map.fitBounds(match.layer.getBounds(), { padding: [50, 50] });
-            match.layer.fire('click');
-        } else {
-            map.setView(match.layer.getLatLng(), 15);
-            match.layer.openPopup();
-        }
-    }
-});
+</select>
+
+</div>
+
+
+
+<!-- Panel de Control de Categorías de Proyectos -->
+
+<div class="layer-control-panel">
+
+<h4>Filtrar Categorías de Proyectos</h4>
+
+<label><input type="checkbox" class="cat-filter" value="infraestructura comunitaria y social" checked> Inf. Comunitaria y Social</label>
+
+<label><input type="checkbox" class="cat-filter" value="infraestructura de servicios basicos" checked> Servicios Básicos</label>
+
+<label><input type="checkbox" class="cat-filter" value="educacion, cultura y juventud" checked> Educación, Cultura y Juventud</label>
+
+<label><input type="checkbox" class="cat-filter" value="turismo sostenible y emprendimientos productivos" checked> Turismo y Emprendimientos</label>
+
+<label><input type="checkbox" class="cat-filter" value="seguridad, vigilancia y gestion ambiental" checked> Seguridad y Gestión Amb.</label>
+
+<label><input type="checkbox" class="cat-filter" value="ayuda social y mejoramiento de infraestructura" checked> Ayuda Social y Mejoramiento</label>
+
+</div>
+
+
+
+<!-- Panel Estadístico / Gráfico de Visitas por Mes -->
+
+<div class="stats-panel">
+
+<h4>Visitas por Día</h4>
+
+<div class="chart-container">
+
+<canvas id="visitasChart"></canvas>
+
+</div>
+
+</div>
+
+
+
+<!-- Panel Lateral Izquierdo (Ficha del Territorio) -->
+
+<div class="sidebar">
+
+<div class="header-territorio">
+
+<small>TERRITORIO SELECCIONADO</small>
+
+<h2 id="info-nombre">Haz clic en un territorio</h2>
+
+<div class="badges-programa">
+
+<span id="badge-cref" class="tag-programa tag-inactive">CREF</span>
+
+<span id="badge-paft" class="tag-programa tag-inactive">PAFT</span>
+
+</div>
+
+</div>
+
+
+
+<div class="card-info">
+
+<span class="label-titulo">Decreto de Creación</span>
+
+<span id="info-decreto" class="valor-destacado">-</span>
+
+</div>
+
+
+
+<div class="card-info">
+
+<span class="label-titulo">Bloque</span>
+
+<span id="info-bloque" class="valor-texto">-</span>
+
+</div>
+
+
+
+<div class="card-info desembolsos-box">
+
+<span class="label-titulo">Desembolsos REDD+</span>
+
+<div class="desembolsos-flex">
+
+<div><small>1.° Desembolso</small><span id="info-des1">-</span></div>
+
+<div class="divider-v"></div>
+
+<div><small>2.° Desembolso</small><span id="info-des2">-</span></div>
+
+</div>
+
+</div>
+
+
+
+<div class="card-info">
+
+<span class="label-titulo">Área Efectiva Aprobada por Año (ha)</span>
+
+<table class="tabla-anios">
+
+<thead>
+
+<tr><th>Año</th><th>Área (ha)</th></tr>
+
+</thead>
+
+<tbody>
+
+<tr><td>2017</td><td id="ae-2017">-</td></tr>
+
+<tr><td>2018</td><td id="ae-2018">-</td></tr>
+
+<tr><td>2019</td><td id="ae-2019">-</td></tr>
+
+<tr><td>2020</td><td id="ae-2020">-</td></tr>
+
+<tr><td>2021</td><td id="ae-2021">-</td></tr>
+
+<tr><td>2022</td><td id="ae-2022">-</td></tr>
+
+<tr><td>2023</td><td id="ae-2023">-</td></tr>
+
+<tr><td>2024</td><td id="ae-2024">-</td></tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+
+
+<div id="map"></div>
+
+
+
+<!-- Leaflet JS -->
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- Script principal -->
+
+<script src="script.js"></script></body></html>
