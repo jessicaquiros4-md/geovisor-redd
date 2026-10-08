@@ -21,10 +21,6 @@ document.getElementById('select-basemap').addEventListener('change', (e) => {
     basemaps[e.target.value].addTo(map);
 });
 
-// Grupos principales para el control de capas de Leaflet
-const capaTerritoriosGroup = L.layerGroup().addTo(map);
-const capaPuntosGroup = L.layerGroup().addTo(map);
-
 const estiloNormal = { color: '#0f766e', weight: 1.5, fillColor: '#14b8a6', fillOpacity: 0.35, pane: 'paneTerritorios' };
 const estiloHover = { color: '#0f766e', weight: 3, fillColor: '#2dd4bf', fillOpacity: 0.55, pane: 'paneTerritorios' };
 
@@ -40,27 +36,23 @@ const coloresCategorias = {
 };
 
 let allLayersSearch = [];
-let puntosLayersList = [];
 let chartInstance = null;
 
-// Función para evaluar si un punto debe mostrarse según los checkboxes activos y el estado de la capa principal de puntos
-function actualizarFiltroPuntos() {
-    const checkboxesActivos = Array.from(document.querySelectorAll('.cat-filter:checked')).map(cb => cb.value.trim().toLowerCase());
-    
-    puntosLayersList.forEach(item => {
-        const categoriaPunto = (item.category || '').trim().toLowerCase();
-        const coincide = checkboxesActivos.some(cat => categoriaPunto.includes(cat));
+// Contenedores jerárquicos para el menú desplegable de Leaflet
+const territoriosPorNombre = {};
+const proyectosPorCategoria = {};
 
-        if (coincide) {
-            if (!capaPuntosGroup.hasLayer(item.marker)) {
-                capaPuntosGroup.addLayer(item.marker);
-            }
-        } else {
-            if (capaPuntosGroup.hasLayer(item.marker)) {
-                capaPuntosGroup.removeLayer(item.marker);
-            }
-        }
-    });
+// Control de capas dinámico inicial
+let controlCapas = L.control.layers(null, {}, { collapsed: false }).addTo(map);
+
+function actualizarControlCapasLeaflet() {
+    if (controlCapas) {
+        controlCapas.remove();
+    }
+    controlCapas = L.control.layers(null, {
+        "Territorios Indígenas": territoriosPorNombre,
+        "Proyectos Visitados": proyectosPorCategoria
+    }, { collapsed: false }).addTo(map);
 }
 
 // 2. Cargar Territorios Indígenas
@@ -69,61 +61,73 @@ fetch('datos/territorios.geojson')
     .then(data => {
         document.getElementById('kpi-territorios').textContent = data.features.length;
 
-        const geoLayer = L.geoJSON(data, {
-            style: estiloNormal,
-            pane: 'paneTerritorios',
-            onEachFeature: (feature, layer) => {
-                const props = feature.properties || {};
-                const nombreTerritorio = props.TERRITORIO || 'Territorio Indígena';
+        data.features.forEach(feature => {
+            const props = feature.properties || {};
+            const nombreTerritorio = props.TERRITORIO || 'Territorio Indígena';
 
-                allLayersSearch.push({ layer, type: 'territorio', name: nombreTerritorio });
+            const individualLayer = L.geoJSON(feature, {
+                style: estiloNormal,
+                pane: 'paneTerritorios',
+                onEachFeature: (feat, layer) => {
+                    allLayersSearch.push({ layer, type: 'territorio', name: nombreTerritorio });
 
-                layer.on({
-                    mouseover: (e) => { e.target.setStyle(estiloHover); e.target.bringToFront(); },
-                    mouseout: (e) => { geoLayer.resetStyle(e.target); },
-                    click: (e) => {
-                        map.fitBounds(e.target.getBounds(), { padding: [40, 40] });
-                        document.getElementById('info-nombre').textContent = nombreTerritorio;
+                    layer.on({
+                        mouseover: (e) => { e.target.setStyle(estiloHover); e.target.bringToFront(); },
+                        mouseout: (e) => { individualLayer.resetStyle(e.target); },
+                        click: (e) => {
+                            map.fitBounds(e.target.getBounds(), { padding: [40, 40] });
+                            document.getElementById('info-nombre').textContent = nombreTerritorio;
 
-                        const clasif = (props.CLASIF || '').toUpperCase();
-                        const badgeCref = document.getElementById('badge-cref');
-                        const badgePaft = document.getElementById('badge-paft');
+                            const clasif = (props.CLASIF || '').toUpperCase();
+                            const badgeCref = document.getElementById('badge-cref');
+                            const badgePaft = document.getElementById('badge-paft');
 
-                        if (clasif.includes('CREF')) {
-                            badgeCref.textContent = 'CREF: Sí';
-                            badgeCref.className = 'tag-programa tag-active';
-                        } else {
-                            badgeCref.textContent = 'CREF: No';
-                            badgeCref.className = 'tag-programa tag-inactive';
+                            if (clasif.includes('CREF')) {
+                                badgeCref.textContent = 'CREF: Sí';
+                                badgeCref.className = 'tag-programa tag-active';
+                            } else {
+                                badgeCref.textContent = 'CREF: No';
+                                badgeCref.className = 'tag-programa tag-inactive';
+                            }
+
+                            if (clasif.includes('PAFT')) {
+                                badgePaft.textContent = 'PAFT: Sí';
+                                badgePaft.className = 'tag-programa tag-active';
+                            } else {
+                                badgePaft.textContent = 'PAFT: No';
+                                badgePaft.className = 'tag-programa tag-inactive';
+                            }
+
+                            document.getElementById('info-decreto').textContent = props.DECRETO ? `Decreto ${props.DECRETO} (${props.AÑO || ''})` : 'No especificado';
+                            document.getElementById('info-bloque').textContent = props.BLOQUE || 'N/D';
+
+                            // Montos en colones y conversión a dólares (tipo de cambio ref. ~520 CRC)
+                            const des1Colones = props['PRIMER DESEMBOLSO'] ? Number(props['PRIMER DESEMBOLSO']) : 0;
+                            const des2Colones = props['SEGUNDO DESEMBOLSO'] ? Number(props['SEGUNDO DESEMBOLSO']) : 0;
+
+                            const formatoMonto = (val) => val ? `₡${val.toLocaleString()} <br><small style="color:#64748b; font-weight:normal;">(~$${(val / 520).toFixed(2)} USD)</small>` : 'No asignado';
+
+                            document.getElementById('info-des1').innerHTML = formatoMonto(des1Colones);
+                            document.getElementById('info-des2').innerHTML = formatoMonto(des2Colones);
+
+                            document.getElementById('ae-2017').textContent = props.AE_2017 ?? '-';
+                            document.getElementById('ae-2018').textContent = props.AE_2018 ?? '-';
+                            document.getElementById('ae-2019').textContent = props.AE_2019 ?? '-';
+                            document.getElementById('ae-2020').textContent = props.AE_2020 ?? '-';
+                            document.getElementById('ae-2021').textContent = props.AE_2021 ?? '-';
+                            document.getElementById('ae-2022').textContent = props.AE_2022 ?? '-';
+                            document.getElementById('ae-2023').textContent = props.AE_2023 ?? '-';
+                            document.getElementById('ae-2024').textContent = props.AE_2024 ?? '-';
                         }
+                    });
+                }
+            });
 
-                        if (clasif.includes('PAFT')) {
-                            badgePaft.textContent = 'PAFT: Sí';
-                            badgePaft.className = 'tag-programa tag-active';
-                        } else {
-                            badgePaft.textContent = 'PAFT: No';
-                            badgePaft.className = 'tag-programa tag-inactive';
-                        }
-
-                        document.getElementById('info-decreto').textContent = props.DECRETO ? `Decreto ${props.DECRETO} (${props.AÑO || ''})` : 'No especificado';
-                        document.getElementById('info-bloque').textContent = props.BLOQUE || 'N/D';
-
-                        document.getElementById('info-des1').textContent = props['PRIMER DESEMBOLSO'] ? `${props['PRIMER DESEMBOLSO']}` : 'N/D';
-                        document.getElementById('info-des2').textContent = props['SEGUNDO DESEMBOLSO'] ? `${props['SEGUNDO DESEMBOLSO']}` : 'N/D';
-
-                        document.getElementById('ae-2017').textContent = props.AE_2017 ?? '-';
-                        document.getElementById('ae-2018').textContent = props.AE_2018 ?? '-';
-                        document.getElementById('ae-2019').textContent = props.AE_2019 ?? '-';
-                        document.getElementById('ae-2020').textContent = props.AE_2020 ?? '-';
-                        document.getElementById('ae-2021').textContent = props.AE_2021 ?? '-';
-                        document.getElementById('ae-2022').textContent = props.AE_2022 ?? '-';
-                        document.getElementById('ae-2023').textContent = props.AE_2023 ?? '-';
-                        document.getElementById('ae-2024').textContent = props.AE_2024 ?? '-';
-                    }
-                });
-            }
+            territoriosPorNombre[nombreTerritorio] = individualLayer;
+            individualLayer.addTo(map);
         });
-        capaTerritoriosGroup.addLayer(geoLayer);
+
+        actualizarControlCapasLeaflet();
     });
 
 // 3. Cargar Puntos de Proyectos
@@ -170,75 +174,76 @@ fetch('datos/puntos.geojson')
             }
         });
 
-        const puntosLayer = L.geoJSON(data, {
-            pointToLayer: (feature, latlng) => {
-                const p = feature.properties || {};
-                const catRaw = (p.Clasificacion || '').trim().toLowerCase();
-                const color = coloresCategorias[catRaw] || '#0f766e';
-
-                const marker = L.circleMarker(latlng, {
-                    radius: 8,
-                    fillColor: color,
-                    color: '#ffffff',
-                    weight: 2,
-                    fillOpacity: 0.95,
-                    pane: 'panePuntos'
-                });
-
-                marker.categoryKey = catRaw;
-                puntosLayersList.push({ marker, category: catRaw });
-                return marker;
-            },
-            onEachFeature: (feature, layer) => {
-                const p = feature.properties || {};
-
-                const nombreProj = p['3_Nombre_de_Proyecto'] || 'Proyecto sin nombre';
-                const territorio = p['1_Territorio_Indgena'] || 'No especificado';
-                const comunidad = p['6_Comunidad_TI'] || 'N/D';
-                const catFormateada = p.Clasificacion || 'General';
-                const desc = p['4_Descripcin_de_proy'] || 'Sin descripción detallada.';
-                const inversion = p['5_Inversin_CREF'] !== undefined ? `₡${Number(p['5_Inversin_CREF']).toLocaleString()}` : 'N/D';
-                const fecha = p['11_Fecha_de_visita'] || 'N/D';
-                const desembolso = p['8_Desembolso_CREF'] || 'N/D';
-                const colaborador = p['12_Colaboradora_o'] || 'N/D';
-
-                allLayersSearch.push({ layer, type: 'punto', name: nombreProj });
-
-                layer.bindPopup(`
-                    <div class="popup-proyecto">
-                        <h3>${nombreProj}</h3>
-                        <p><strong>Territorio:</strong> ${territorio}</p>
-                        <p><strong>Comunidad:</strong> ${comunidad}</p>
-                        <p><strong>Clasificación:</strong> ${catFormateada}</p>
-                        <p><strong>Descripción:</strong> ${desc.replace(/\n/g, '<br>')}</p>
-                        <p><strong>Inversión CREF:</strong> ${inversion}</p>
-                        <p><strong>Desembolso:</strong> ${desembolso}</p>
-                        <p><strong>Fecha de Visita:</strong> ${fecha}</p>
-                        <p><strong>Colaborador(a):</strong> ${colaborador}</p>
-                        <div class="popup-img-preview">📸 Fotografía: ${p['13_Fotografa'] || 'N/D'}</div>
-                    </div>
-                `, { maxWidth: 320 });
+        // Agrupar features de puntos por su categoría exacta
+        const categoriasMap = {};
+        data.features.forEach(feature => {
+            const p = feature.properties || {};
+            const catRaw = (p.Clasificacion || 'General').trim();
+            if (!categoriasMap[catRaw]) {
+                categoriasMap[catRaw] = [];
             }
+            categoriasMap[catRaw].push(feature);
         });
 
-        puntosLayersList.forEach(item => capaPuntosGroup.addLayer(item.marker));
-        actualizarFiltroPuntos();
+        Object.keys(categoriasMap).forEach(catName => {
+            const featuresCat = categoriasMap[catName];
+            
+            const layerCat = L.geoJSON({ type: "FeatureCollection", features: featuresCat }, {
+                pointToLayer: (feature, latlng) => {
+                    const p = feature.properties || {};
+                    const catKey = (p.Clasificacion || '').trim().toLowerCase();
+                    const color = coloresCategorias[catKey] || '#0f766e';
+
+                    return L.circleMarker(latlng, {
+                        radius: 8,
+                        fillColor: color,
+                        color: '#ffffff',
+                        weight: 2,
+                        fillOpacity: 0.95,
+                        pane: 'panePuntos'
+                    });
+                },
+                onEachFeature: (feature, layer) => {
+                    const p = feature.properties || {};
+
+                    const nombreProj = p['3_Nombre_de_Proyecto'] || 'Proyecto sin nombre';
+                    const territorio = p['1_Territorio_Indgena'] || 'No especificado';
+                    const comunidad = p['6_Comunidad_TI'] || 'N/D';
+                    const catFormateada = p.Clasificacion || 'General';
+                    const desc = p['4_Descripcin_de_proy'] || 'Sin descripción detallada.';
+                    const inversionVal = p['5_Inversin_CREF'];
+                    const inversion = inversionVal !== undefined ? `₡${Number(inversionVal).toLocaleString()} (~$${(Number(inversionVal)/520).toFixed(2)} USD)` : 'N/D';
+                    const fecha = p['11_Fecha_de_visita'] || 'N/D';
+                    const desembolso = p['8_Desembolso_CREF'] || 'N/D';
+                    const colaborador = p['12_Colaboradora_o'] || 'N/D';
+
+                    allLayersSearch.push({ layer, type: 'punto', name: nombreProj });
+
+                    layer.bindPopup(`
+                        <div class="popup-proyecto">
+                            <h3>${nombreProj}</h3>
+                            <p><strong>Territorio:</strong> ${territorio}</p>
+                            <p><strong>Comunidad:</strong> ${comunidad}</p>
+                            <p><strong>Clasificación:</strong> ${catFormateada}</p>
+                            <p><strong>Descripción:</strong> ${desc.replace(/\n/g, '<br>')}</p>
+                            <p><strong>Inversión CREF:</strong> ${inversion}</p>
+                            <p><strong>Desembolso:</strong> ${desembolso}</p>
+                            <p><strong>Fecha de Visita:</strong> ${fecha}</p>
+                            <p><strong>Colaborador(a):</strong> ${colaborador}</p>
+                            <div class="popup-img-preview">📸 Fotografía: ${p['13_Fotografa'] || 'N/D'}</div>
+                        </div>
+                    `, { maxWidth: 320 });
+                }
+            });
+
+            proyectosPorCategoria[catName] = layerCat;
+            layerCat.addTo(map);
+        });
+
+        actualizarControlCapasLeaflet();
     });
 
-// 4. Control de capas estándar de Leaflet (para encender/apagar grupos globales de forma independiente)
-L.control.layers(null, {
-    "Territorios Indígenas": capaTerritoriosGroup,
-    "Proyectos Visitados": capaPuntosGroup
-}, { collapsed: false }).addTo(map);
-
-// 5. Filtrado por Checkboxes de Categorías
-document.querySelectorAll('.cat-filter').forEach(checkbox => {
-    checkbox.addEventListener('change', () => {
-        actualizarFiltroPuntos();
-    });
-});
-
-// 6. Buscador Rápido Global corregido
+// 4. Buscador Rápido Global corregido
 document.getElementById('buscador').addEventListener('input', (e) => {
     const query = e.target.value.toLowerCase().trim();
     if (query.length < 2) return;
