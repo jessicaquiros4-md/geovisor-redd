@@ -111,13 +111,12 @@ fetch('datos/puntos.geojson')
   .then(data => {
     document.getElementById('kpi-visitas').textContent = data.features.length;
 
-    // Procesar gráfico de visitas por mes basado en fechas reales
+    // Procesar gráfico de visitas por mes basado en fechas reales con corchetes seguros
     const mesesConteo = {};
     data.features.forEach(f => {
       const p = f.properties || {};
-      const fechaStr = p.11_Fecha_de_visita || p.fecha || p.FECHA || p.Fecha || p.date || '';
+      const fechaStr = p['11_Fecha_de_visita'] || p.fecha || p.FECHA || p.Fecha || p.date || '';
       if (fechaStr) {
-        // Extraer formato año/mes (ej. YYYY-MM o adaptado)
         let mesAnio = fechaStr.substring(0, 7);
         if (mesAnio.length >= 7) {
           mesesConteo[mesAnio] = (mesesConteo[mesAnio] || 0) + 1;
@@ -158,7 +157,6 @@ fetch('datos/puntos.geojson')
         const p = feature.properties || {};
         let catRaw = (p.Clasificacion || p.categoria || p.CATEGORIA || 'ICS').toUpperCase();
         
-        // Extraer clave corta si viene el texto largo
         if (catRaw.includes('COMUNITARIA')) catRaw = 'ICS';
         else if (catRaw.includes('SERVICIOS') || catRaw.includes('AGUA')) catRaw = 'ISA';
         else if (catRaw.includes('EDUCACION')) catRaw = 'ECJ';
@@ -184,6 +182,7 @@ fetch('datos/puntos.geojson')
       onEachFeature: (feature, layer) => {
         const p = feature.properties || {};
         
+        // Uso estricto de corchetes para propiedades que empiezan con números
         const nombreProj = p['3_Nombre_de_Proyecto'] || p.nombre || p.NOMBRE || 'Proyecto sin nombre';
         const territorio = p['1_Territorio_Indgena'] || p.territorio || p.TERRITORIO || 'No especificado';
         
