@@ -1,126 +1,126 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Geovisor REDD+ - Territorios y Proyectos</title>
-  
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <!-- Chart.js para estadísticas -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  
-  <!-- Estilos propios -->
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geovisor REDD+ - Territorios y Proyectos</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Chart.js para estadísticas -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Estilos propios -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- KPI Cards Superiores -->
-  <div id="kpi-panel" class="kpi-container">
-    <div class="kpi-card">
-      <span class="kpi-title">Territorios</span>
-      <span id="kpi-territorios" class="kpi-value">0</span>
-    </div>
-    <div class="kpi-card">
-      <span class="kpi-title">Visitas / Proyectos</span>
-      <span id="kpi-visitas" class="kpi-value">0</span>
-    </div>
-  </div>
-
-  <!-- Buscador rápido -->
-  <div class="search-container">
-    <input type="text" id="buscador" placeholder="🔍 Buscar territorio o proyecto..." />
-  </div>
-
-  <!-- Selector de Mapa Base -->
-  <div class="basemap-selector">
-    <select id="select-basemap">
-      <option value="osm">Mapa Estándar (OSM)</option>
-      <option value="carto">Gris Limpio (CartoDB)</option>
-      <option value="esri">Satélite (Esri)</option>
-    </select>
-  </div>
-
-  <!-- Panel de Control de Categorías de Proyectos -->
-  <div class="layer-control-panel">
-    <h4>Filtrar Categorías de Proyectos</h4>
-    <label><input type="checkbox" class="cat-filter" value="ICS" checked> Inf. Comunitaria y Social (ICS)</label>
-    <label><input type="checkbox" class="cat-filter" value="ISA" checked> Servicios Básicos y Agua (ISA)</label>
-    <label><input type="checkbox" class="cat-filter" value="ECJ" checked> Educación, Cultura y Juv. (ECJ)</label>
-    <label><input type="checkbox" class="cat-filter" value="TEP" checked> Turismo y Emprendimientos (TEP)</label>
-    <label><input type="checkbox" class="cat-filter" value="SVA" checked> Seguridad y Gestión Amb. (SVA)</label>
-    <label><input type="checkbox" class="cat-filter" value="ASV" checked> Ayuda Social y Mejoramiento (ASV)</label>
-  </div>
-
-  <!-- Panel Estadístico / Gráfico de Visitas por Mes -->
-  <div class="stats-panel">
-    <h4>Visitas por Mes</h4>
-    <div class="chart-container">
-      <canvas id="visitasChart"></canvas>
-    </div>
-  </div>
-
-  <!-- Panel Lateral Izquierdo (Ficha del Territorio) -->
-  <div class="sidebar">
-    <div class="header-territorio">
-      <small>TERRITORIO SELECCIONADO</small>
-      <h2 id="info-nombre">Haz clic en un territorio</h2>
-      
-      <div class="badges-programa">
-        <span id="badge-cref" class="tag-programa tag-inactive">CREF</span>
-        <span id="badge-paft" class="tag-programa tag-inactive">PAFT</span>
-      </div>
+    <!-- KPI Cards Superiores -->
+    <div id="kpi-panel" class="kpi-container">
+        <div class="kpi-card">
+            <span class="kpi-title">Territorios</span>
+            <span id="kpi-territorios" class="kpi-value">0</span>
+        </div>
+        <div class="kpi-card">
+            <span class="kpi-title">Visitas / Proyectos</span>
+            <span id="kpi-visitas" class="kpi-value">0</span>
+        </div>
     </div>
 
-    <div class="card-info">
-      <span class="label-titulo">Decreto de Creación</span>
-      <span id="info-decreto" class="valor-destacado">-</span>
+    <!-- Buscador rápido -->
+    <div class="search-container">
+        <input type="text" id="buscador" placeholder="🔍 Buscar territorio o proyecto..." />
     </div>
 
-    <div class="grid-detalles">
-      <div class="card-info">
-        <span class="label-titulo">Bloque</span>
-        <span id="info-bloque" class="valor-texto">-</span>
-      </div>
-      <div class="card-info">
-        <span class="label-titulo">Clasificación</span>
-        <span id="info-clasif" class="valor-texto">-</span>
-      </div>
+    <!-- Selector de Mapa Base -->
+    <div class="basemap-selector">
+        <select id="select-basemap">
+            <option value="osm">Mapa Estándar (OSM)</option>
+            <option value="carto">Gris Limpio (CartoDB)</option>
+            <option value="esri">Satélite (Esri)</option>
+        </select>
     </div>
 
-    <div class="card-info desembolsos-box">
-      <span class="label-titulo">Desembolsos REDD+</span>
-      <div class="desembolsos-flex">
-        <div><small>1.° Desembolso</small><span id="info-des1">-</span></div>
-        <div class="divider-v"></div>
-        <div><small>2.° Desembolso</small><span id="info-des2">-</span></div>
-      </div>
+    <!-- Panel de Control de Categorías de Proyectos -->
+    <div class="layer-control-panel">
+        <h4>Filtrar Categorías de Proyectos</h4>
+        <label><input type="checkbox" class="cat-filter" value="infraestructura comunitaria y social" checked> Inf. Comunitaria y Social</label>
+        <label><input type="checkbox" class="cat-filter" value="infraestructura de servicios basicos" checked> Servicios Básicos</label>
+        <label><input type="checkbox" class="cat-filter" value="educacion, cultura y juventud" checked> Educación, Cultura y Juventud</label>
+        <label><input type="checkbox" class="cat-filter" value="turismo sostenible y emprendimientos productivos" checked> Turismo y Emprendimientos</label>
+        <label><input type="checkbox" class="cat-filter" value="seguridad, vigilancia y gestion ambiental" checked> Seguridad y Gestión Amb.</label>
+        <label><input type="checkbox" class="cat-filter" value="ayuda social y mejoramiento de infraestructura" checked> Ayuda Social y Mejoramiento</label>
     </div>
 
-    <div class="card-info">
-      <span class="label-titulo">Área Efectiva Aprobada por Año (ha)</span>
-      <table class="tabla-anios">
-        <thead>
-          <tr><th>Año</th><th>Área (ha)</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>2018</td><td id="ae-2018">-</td></tr>
-          <tr><td>2019</td><td id="ae-2019">-</td></tr>
-          <tr><td>2020</td><td id="ae-2020">-</td></tr>
-          <tr><td>2021</td><td id="ae-2021">-</td></tr>
-          <tr><td>2022</td><td id="ae-2022">-</td></tr>
-          <tr><td>2023</td><td id="ae-2023">-</td></tr>
-          <tr><td>2024</td><td id="ae-2024">-</td></tr>
-        </tbody>
-      </table>
+    <!-- Panel Estadístico / Gráfico de Visitas por Mes -->
+    <div class="stats-panel">
+        <h4>Visitas por Mes</h4>
+        <div class="chart-container">
+            <canvas id="visitasChart"></canvas>
+        </div>
     </div>
-  </div>
 
-  <div id="map"></div>
+    <!-- Panel Lateral Izquierdo (Ficha del Territorio) -->
+    <div class="sidebar">
+        <div class="header-territorio">
+            <small>TERRITORIO SELECCIONADO</small>
+            <h2 id="info-nombre">Haz clic en un territorio</h2>
+            <div class="badges-programa">
+                <span id="badge-cref" class="tag-programa tag-inactive">CREF</span>
+                <span id="badge-paft" class="tag-programa tag-inactive">PAFT</span>
+            </div>
+        </div>
 
-  <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <!-- Script principal corregido -->
-  <script src="script.js"></script>
+        <div class="card-info">
+            <span class="label-titulo">Decreto de Creación</span>
+            <span id="info-decreto" class="valor-destacado">-</span>
+        </div>
+
+        <div class="grid-detalles">
+            <div class="card-info">
+                <span class="label-titulo">Bloque</span>
+                <span id="info-bloque" class="valor-texto">-</span>
+            </div>
+            <div class="card-info">
+                <span class="label-titulo">Clasificación</span>
+                <span id="info-clasif" class="valor-texto">-</span>
+            </div>
+        </div>
+
+        <div class="card-info desembolsos-box">
+            <span class="label-titulo">Desembolsos REDD+</span>
+            <div class="desembolsos-flex">
+                <div><small>1.° Desembolso</small><span id="info-des1">-</span></div>
+                <div class="divider-v"></div>
+                <div><small>2.° Desembolso</small><span id="info-des2">-</span></div>
+            </div>
+        </div>
+
+        <div class="card-info">
+            <span class="label-titulo">Área Efectiva Aprobada por Año (ha)</span>
+            <table class="tabla-anios">
+                <thead>
+                    <tr><th>Año</th><th>Área (ha)</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>2017</td><td id="ae-2017">-</td></tr>
+                    <tr><td>2018</td><td id="ae-2018">-</td></tr>
+                    <tr><td>2019</td><td id="ae-2019">-</td></tr>
+                    <tr><td>2020</td><td id="ae-2020">-</td></tr>
+                    <tr><td>2021</td><td id="ae-2021">-</td></tr>
+                    <tr><td>2022</td><td id="ae-2022">-</td></tr>
+                    <tr><td>2023</td><td id="ae-2023">-</td></tr>
+                    <tr><td>2024</td><td id="ae-2024">-</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Script principal corregido -->
+    <script src="script.js"></script>
 </body>
 </html>
