@@ -38,23 +38,19 @@ const coloresCategorias = {
 let allLayersSearch = [];
 let chartInstance = null;
 
-// Contenedores para el menú desplegable independiente de Leaflet
-const territoriosLayers = {};
-const proyectosCategoriasLayers = {};
+// Grupos principales para el menú desplegable anidado en Leaflet
+const territoriosGroup = L.layerGroup();
+const proyectosGroup = L.layerGroup();
 
-let controlCapas = L.control.layers(null, {}, { collapsed: false }).addTo(map);
+const territoriosPorNombre = {};
+const proyectosPorCategoria = {};
 
-function actualizarControlCapas() {
-    if (controlCapas) {
-        controlCapas.remove();
-    }
-    controlCapas = L.control.layers(null, {
-        ...territoriosLayers,
-        ...proyectosCategoriasLayers
-    }, { collapsed: false }).addTo(map);
-}
+let controlCapas = L.control.layers(null, {
+    "Territorios Indígenas": territoriosPorNombre,
+    "Proyectos Visitados": proyectosPorCategoria
+}, { collapsed: false }).addTo(map);
 
-// 2. Cargar Territorios Indígenas (desplegados de forma independiente por nombre)
+// 2. Cargar Territorios Indígenas
 fetch('datos/territorios.geojson')
     .then(res => res.json())
     .then(data => {
@@ -100,7 +96,7 @@ fetch('datos/territorios.geojson')
                             document.getElementById('info-decreto').textContent = props.DECRETO ? 'Decreto ' + props.DECRETO + ' (' + (props.AÑO || '') + ')' : 'No especificado';
                             document.getElementById('info-bloque').textContent = props.BLOQUE || 'N/D';
 
-                            // Lectura exacta basada en tus columnas de desembolso
+                            // Lectura de desembolsos según las columnas exactas
                             const fec1 = props['fec_desemb_1'];
                             const usd1 = props['monto_desemb_1_usd'];
                             const crc1 = props['monto_desemb_1_crc'];
@@ -142,15 +138,15 @@ fetch('datos/territorios.geojson')
                 }
             });
 
-            // Añadir al control de capas bajo la categoría visual de Territorios
-            territoriosLayers['📁 Territorio: ' + nombreTerritorio] = individualLayer;
-            individualLayer.addTo(map);
+            territoriosPorNombre[nombreTerritorio] = individualLayer;
+            territoriosGroup.addLayer(individualLayer);
         });
 
+        territoriosGroup.addTo(map);
         actualizarControlCapas();
     });
 
-// 3. Cargar Puntos de Proyectos (agrupados por categorías para filtrado independiente)
+// 3. Cargar Puntos de Proyectos
 fetch('datos/puntos.geojson')
     .then(res => res.json())
     .then(data => {
@@ -194,7 +190,7 @@ fetch('datos/puntos.geojson')
             }
         });
 
-        // Agrupar features de puntos por categoría
+        // Agrupar puntos por categoría
         const categoriasMap = {};
         data.features.forEach(feature => {
             const p = feature.properties || {};
@@ -235,10 +231,10 @@ fetch('datos/puntos.geojson')
                     const inversion = inversionVal !== undefined ? '₡' + Number(inversionVal).toLocaleString() + ' (~$' + (Number(inversionVal)/520).toFixed(2) + ' USD)' : 'N/D';
                     const fecha = p['11_Fecha_de_visita'] || 'N/D';
                     const desembolso = p['8_Desembolso_CREF'] || 'N/D';
-                    const colaborador = p['12_Colaboradora_o'] || 'N/D';
 
                     allLayersSearch.push({ layer, type: 'punto', name: nombreProj });
 
+                    // Popup sin colaborador
                     layer.bindPopup(
                         '<div class="popup-proyecto">' +
                             '<h3>' + nombreProj + '</h3>' +
@@ -249,7 +245,6 @@ fetch('datos/puntos.geojson')
                             '<p><strong>Inversión CREF:</strong> ' + inversion + '</p>' +
                             '<p><strong>Desembolso:</strong> ' + desembolso + '</p>' +
                             '<p><strong>Fecha de Visita:</strong> ' + fecha + '</p>' +
-                            '<p><strong>Colaborador(a):</strong> ' + colaborador + '</p>' +
                             '<div class="popup-img-preview">📸 Fotografía: ' + (p['13_Fotografa'] || 'N/D') + '</div>' +
                         '</div>',
                         { maxWidth: 320 }
@@ -257,12 +252,23 @@ fetch('datos/puntos.geojson')
                 }
             });
 
-            proyectosCategoriasLayers['📍 Proyecto: ' + catName] = layerCat;
-            layerCat.addTo(map);
+            proyectosPorCategoria[catName] = layerCat;
+            proyectosGroup.addLayer(layerCat);
         });
 
+        proyectosGroup.addTo(map);
         actualizarControlCapas();
     });
+
+function actualizarControlCapas() {
+    if (controlCapas) {
+        controlCapas.remove();
+    }
+    controlCapas = L.control.layers(null, {
+        "Territorios Indígenas": territoriosPorNombre,
+        "Proyectos Visitados": proyectosPorCategoria
+    }, { collapsed: false }).addTo(map);
+}
 
 // 4. Buscador Rápido Global corregido
 document.getElementById('buscador').addEventListener('input', (e) => {
