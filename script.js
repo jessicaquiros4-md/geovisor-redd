@@ -36,37 +36,24 @@ const estiloHover = { color: '#0f766e', weight: 3, fillColor: '#2dd4bf', fillOpa
 const estiloSeleccionado = { color: '#115e59', weight: 3, fillColor: '#2dd4bf', fillOpacity: 0.46, pane: 'paneTerritorios' };
 
 let selectedTerritoryLayer = null;
-let territoryPulseTimer = null;
 let chartInstance = null;
+let layerControl = null;
 
 const allLayersSearch = [];
-const projectCategoryGroups = new Map();
-const territoriosGroup = L.layerGroup().addTo(map);
-const proyectosClusterGroup = L.markerClusterGroup({ maxClusterRadius: 50 }).addTo(map);
+const territoriosPorNombre = {};
+const proyectosPorCategoria = {};
 
-// Capas principales para el control de Leaflet
-const overlayMaps = {
-    "Territorios Indígenas": territoriosGroup,
-    "Proyectos Visitados": proyectosClusterGroup
+// Colores por categoría de proyectos
+const coloresCategorias = {
+    "infraestructura comunitaria y social": "#2563eb",
+    "infraestructura de servicios basicos": "#dc2626",
+    "educacion, cultura y juventud": "#d97706",
+    "turismo sostenible y emprendimientos productivos": "#16a34a",
+    "seguridad, vigilancia y gestion ambiental": "#9333ea",
+    "ayuda social y mejoramiento de infraestructura": "#db2777"
 };
-const layerControl = L.control.layers(null, overlayMaps, { collapsed: false }).addTo(map);
 
-// 4. Definición de categorías
-const categoryDefinitions = [
-    { key: 'infraestructura comunitaria y social', label: 'Infraestructura comunitaria y social', color: '#2563eb', icon: 'house' },
-    { key: 'infraestructura de servicios basicos', label: 'Infraestructura de servicios básicos', color: '#dc2626', icon: 'house' },
-    { key: 'educacion, cultura y juventud', label: 'Educación, cultura y juventud', color: '#d97706', icon: 'school' },
-    { key: 'turismo sostenible y emprendimientos productivos', label: 'Turismo sostenible y emprendimientos productivos', color: '#16a34a', icon: 'leaf' },
-    { key: 'seguridad, vigilancia y gestion ambiental', label: 'Seguridad, vigilancia y gestión ambiental', color: '#9333ea', icon: 'leaf' },
-    { key: 'ayuda social y mejoramiento de infraestructura', label: 'Ayuda social y mejoramiento de infraestructura', color: '#db2777', icon: 'house' },
-    { key: 'general', label: 'General / sin clasificación', color: '#0f766e', icon: 'pin' }
-];
-
-const categoryDefinitionMap = new Map();
-categoryDefinitions.forEach((def) => {
-    categoryDefinitionMap.set(def.key.toLowerCase().trim(), def);
-});
-
+// 4. Helpers de formato y normalización
 function normalizeText(value) {
     return String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
 }
@@ -86,7 +73,7 @@ function formatNumber(value, decimals = 2) {
     return new Intl.NumberFormat('es-CR', { maximumFractionDigits: decimals, minimumFractionDigits: 0 }).format(num);
 }
 
-// 5. Formateador exacto de desembolsos (crc, usd y fecha)
+// 5. Formateador exacto basado en tus columnas de desembolso
 function formatearDesembolso(fecha, usd, crc) {
     const tieneFecha = fecha !== undefined && fecha !== null && String(fecha).trim() !== '';
     const montoUSD = parseNumber(usd);
@@ -109,64 +96,80 @@ function formatearDesembolso(fecha, usd, crc) {
     return html || '<span style="color:#94a3b8;">No asignado</span>';
 }
 
+// Actualizar control de capas en Leaflet de forma limpia
+function actualizarControlCapas() {
+    if (layerControl) {
+        map.removeControl(layerControl);
+    }
+    layerControl = L.control.layers(null, {
+        "Territorios Indígenas": territoriosPorNombre,
+        "Proyectos Visitados": proyectosPorCategoria
+    }, { collapsed: false }).addTo(map);
+}
+
 // 6. Cargar Territorios Indígenas
 fetch('datos/territorios.geojson')
     .then(res => res.json())
     .then(data => {
         document.getElementById('kpi-territorios').textContent = data.features.length;
 
-        const geoLayer = L.geoJSON(data, {
-            style: estiloNormal,
-            pane: 'paneTerritorios',
-            onEachFeature: (feature, layer) => {
-                const props = feature.properties || {};
-                const nombreTerritorio = props.TERRITORIO || 'Territorio Indígena';
+        data.features.forEach(feature => {
+            const props = feature.properties || {};
+            const nombreTerritorio = props.TERRITORIO || 'Territorio Indígena';
 
-                allLayersSearch.push({ type: 'territorio', name: nombreTerritorio, layer });
+            const individualLayer = L.geoJSON(feature, {
+                style: estiloNormal,
+                pane: 'paneTerritorios',
+                onEachFeature: (feat, layer) => {
+                    allLayersSearch.push({ type: 'territorio', name: nombreTerritorio, layer });
 
-                layer.on({
-                    mouseover: (e) => { e.target.setStyle(estiloHover); e.target.bringToFront(); },
-                    mouseout: (e) => { 
-                        geoLayer.resetStyle(e.target);
-                        if (e.target === selectedTerritoryLayer) e.target.setStyle(estiloSeleccionado);
-                    },
-                    click: (e) => {
-                        map.flyToBounds(e.target.getBounds(), { padding: [40, 40], duration: 1.1 });
-                        document.getElementById('info-nombre').textContent = nombreTerritorio;
+                    layer.on({
+                        mouseover: (e) => { e.target.setStyle(estiloHover); e.target.bringToFront(); },
+                        mouseout: (e) => { 
+                            individualLayer.resetStyle(e.target);
+                            if (e.target === selectedTerritoryLayer) e.target.setStyle(estiloSeleccionado);
+                        },
+                        click: (e) => {
+                            map.flyToBounds(e.target.getBounds(), { padding: [40, 40], duration: 1.1 });
+                            document.getElementById('info-nombre').textContent = nombreTerritorio;
 
-                        const clasif = (props.CLASIF || '').toUpperCase();
-                        const badgeCref = document.getElementById('badge-cref');
-                        const badgePaft = document.getElementById('badge-paft');
+                            const clasif = (props.CLASIF || '').toUpperCase();
+                            const badgeCref = document.getElementById('badge-cref');
+                            const badgePaft = document.getElementById('badge-paft');
 
-                        badgeCref.textContent = 'CREF: ' + (clasif.includes('CREF') ? 'Sí' : 'No');
-                        badgeCref.className = 'tag-programa ' + (clasif.includes('CREF') ? 'tag-active' : 'tag-inactive');
+                            badgeCref.textContent = 'CREF: ' + (clasif.includes('CREF') ? 'Sí' : 'No');
+                            badgeCref.className = 'tag-programa ' + (clasif.includes('CREF') ? 'tag-active' : 'tag-inactive');
 
-                        badgePaft.textContent = 'PAFT: ' + (clasif.includes('PAFT') ? 'Sí' : 'No');
-                        badgePaft.className = 'tag-programa ' + (clasif.includes('PAFT') ? 'tag-active' : 'tag-inactive');
+                            badgePaft.textContent = 'PAFT: ' + (clasif.includes('PAFT') ? 'Sí' : 'No');
+                            badgePaft.className = 'tag-programa ' + (clasif.includes('PAFT') ? 'tag-active' : 'tag-inactive');
 
-                        document.getElementById('info-decreto').textContent = props.DECRETO ? 'Decreto ' + props.DECRETO + (props.AÑO ? ' (' + props.AÑO + ')' : '') : 'No especificado';
-                        document.getElementById('info-bloque').textContent = props.BLOQUE || 'N/D';
+                            document.getElementById('info-decreto').textContent = props.DECRETO ? 'Decreto ' + props.DECRETO + (props.AÑO ? ' (' + props.AÑO + ')' : '') : 'No especificado';
+                            document.getElementById('info-bloque').textContent = props.BLOQUE || 'N/D';
 
-                        // Lectura de columnas exactas de desembolso
-                        document.getElementById('info-des1').innerHTML = formatearDesembolso(props['fec_desemb_1'], props['monto_desemb_1_usd'], props['monto_desemb_1_crc']);
-                        document.getElementById('info-des2').innerHTML = formatearDesembolso(props['fec_desemb_2'], props['monto_desemb_2_usd'], props['monto_desemb_2_crc']);
+                            // Lectura exacta utilizando tus columnas de desembolso
+                            document.getElementById('info-des1').innerHTML = formatearDesembolso(props['fec_desemb_1'], props['monto_desemb_1_usd'], props['monto_desemb_1_crc']);
+                            document.getElementById('info-des2').innerHTML = formatearDesembolso(props['fec_desemb_2'], props['monto_desemb_2_usd'], props['monto_desemb_2_crc']);
 
-                        [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024].forEach((year) => {
-                            const val = props['AE_' + year];
-                            document.getElementById('ae-' + year).textContent = (val !== undefined && val !== null && val !== '') ? val : '—';
-                        });
+                            [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024].forEach((year) => {
+                                const val = props['AE_' + year];
+                                document.getElementById('ae-' + year).textContent = (val !== undefined && val !== null && val !== '') ? val : '—';
+                            });
 
-                        if (selectedTerritoryLayer && selectedTerritoryLayer !== e.target) {
-                            geoLayer.resetStyle(selectedTerritoryLayer);
+                            if (selectedTerritoryLayer && selectedTerritoryLayer !== e.target) {
+                                individualLayer.resetStyle(selectedTerritoryLayer);
+                            }
+                            selectedTerritoryLayer = e.target;
+                            e.target.setStyle(estiloSeleccionado);
                         }
-                        selectedTerritoryLayer = e.target;
-                        e.target.setStyle(estiloSeleccionado);
-                    }
-                });
-            }
+                    });
+                }
+            });
+
+            territoriosPorNombre[nombreTerritorio] = individualLayer;
+            individualLayer.addTo(map);
         });
 
-        territoriosGroup.addLayer(geoLayer);
+        actualizarControlCapas();
         document.getElementById('data-status').textContent = 'Datos cargados correctamente';
     })
     .catch(err => {
@@ -203,50 +206,70 @@ fetch('datos/puntos.geojson')
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
         });
 
+        // Agrupar proyectos por categoría
+        const categoriasMap = {};
         data.features.forEach(feature => {
             const props = feature.properties || {};
             const catName = props.Clasificacion ? String(props.Clasificacion).trim() : 'General';
-            const def = categoryDefinitionMap.get(normalizeText(catName)) || { color: '#0f766e' };
+            if (!categoriasMap[catName]) {
+                categoriasMap[catName] = [];
+            }
+            categoriasMap[catName].push(feature);
+        });
 
-            const coords = feature.geometry && feature.geometry.coordinates;
-            if (!coords || coords.length < 2) return;
+        Object.keys(categoriasMap).forEach(catName => {
+            const featuresCat = categoriasMap[catName];
 
-            const marker = L.circleMarker([coords[1], coords[0]], {
-                radius: 8,
-                fillColor: def.color,
-                color: '#ffffff',
-                weight: 2,
-                fillOpacity: 0.95,
-                pane: 'panePuntos'
+            const layerCat = L.geoJSON({ type: "FeatureCollection", features: featuresCat }, {
+                pointToLayer: (feature, latlng) => {
+                    const props = feature.properties || {};
+                    const catKey = (props.Clasificacion || '').trim().toLowerCase();
+                    const color = coloresCategorias[catKey] || '#0f766e';
+
+                    return L.circleMarker(latlng, {
+                        radius: 8,
+                        fillColor: color,
+                        color: '#ffffff',
+                        weight: 2,
+                        fillOpacity: 0.95,
+                        pane: 'panePuntos'
+                    });
+                },
+                onEachFeature: (feature, layer) => {
+                    const props = feature.properties || {};
+
+                    const nombreProj = props['3_Nombre_de_Proyecto'] || 'Proyecto sin nombre';
+                    const territorio = props['1_Territorio_Indgena'] || 'No especificado';
+                    const comunidad = props['6_Comunidad_TI'] || 'N/D';
+                    const desc = props['4_Descripcin_de_proy'] || 'Sin descripción.';
+                    const inversionNum = parseNumber(props['5_Inversin_CREF']);
+                    const inversion = inversionNum !== null ? '₡' + formatNumber(inversionNum, 2) : 'N/D';
+                    const fecha = props['11_Fecha_de_visita'] || 'N/D';
+                    const desembolso = props['8_Desembolso_CREF'] || 'N/D';
+
+                    allLayersSearch.push({ type: 'punto', name: nombreProj, layer });
+
+                    layer.bindPopup(
+                        '<div class="popup-proyecto">' +
+                            '<h3>' + nombreProj + '</h3>' +
+                            '<p><strong>Territorio:</strong> ' + territorio + '</p>' +
+                            '<p><strong>Comunidad:</strong> ' + comunidad + '</p>' +
+                            '<p><strong>Clasificación:</strong> ' + catName + '</p>' +
+                            '<p><strong>Descripción:</strong> ' + desc + '</p>' +
+                            '<p><strong>Inversión CREF:</strong> ' + inversion + '</p>' +
+                            '<p><strong>Desembolso:</strong> ' + desembolso + '</p>' +
+                            '<p><strong>Fecha de Visita:</strong> ' + fecha + '</p>' +
+                        '</div>',
+                        { maxWidth: 320 }
+                    );
+                }
             });
 
-            const nombreProj = props['3_Nombre_de_Proyecto'] || 'Proyecto sin nombre';
-            const territorio = props['1_Territorio_Indgena'] || 'No especificado';
-            const comunidad = props['6_Comunidad_TI'] || 'N/D';
-            const desc = props['4_Descripcin_de_proy'] || 'Sin descripción.';
-            const inversionNum = parseNumber(props['5_Inversin_CREF']);
-            const inversion = inversionNum !== null ? '₡' + formatNumber(inversionNum, 2) : 'N/D';
-            const fecha = props['11_Fecha_de_visita'] || 'N/D';
-            const desembolso = props['8_Desembolso_CREF'] || 'N/D';
-
-            allLayersSearch.push({ type: 'punto', name: nombreProj, layer: marker });
-
-            marker.bindPopup(
-                '<div class="popup-proyecto">' +
-                    '<h3>' + nombreProj + '</h3>' +
-                    '<p><strong>Territorio:</strong> ' + territorio + '</p>' +
-                    '<p><strong>Comunidad:</strong> ' + comunidad + '</p>' +
-                    '<p><strong>Clasificación:</strong> ' + catName + '</p>' +
-                    '<p><strong>Descripción:</strong> ' + desc + '</p>' +
-                    '<p><strong>Inversión CREF:</strong> ' + inversion + '</p>' +
-                    '<p><strong>Desembolso:</strong> ' + desembolso + '</p>' +
-                    '<p><strong>Fecha de Visita:</strong> ' + fecha + '</p>' +
-                '</div>',
-                { maxWidth: 320 }
-            );
-
-            proyectosClusterGroup.addLayer(marker);
+            proyectosPorCategoria[catName] = layerCat;
+            layerCat.addTo(map);
         });
+
+        actualizarControlCapas();
     })
     .catch(err => {
         console.error(err);
