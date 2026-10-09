@@ -1,148 +1,125 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#0f766e">
-<title>Geovisor REDD+ - Territorios y Proyectos</title>
- 
-    <!-- Leaflet -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
- 
-    <!-- Agrupamiento de marcadores -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
- 
-    <!-- Control de capas agrupadas -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-groupedlayercontrol@0.6.1/dist/leaflet.groupedlayercontrol.min.css%22>
- 
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f766e">
+    <title>Geovisor REDD+ - Territorios y Proyectos</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- MarkerCluster CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+
     <!-- Estilos propios -->
-<link rel="stylesheet" href="style.css">
- 
+    <link rel="stylesheet" href="style.css">
+
     <!-- Chart.js para el gráfico de visitas -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-<main id="app">
-<!-- Mapa -->
-<div id="map" aria-label="Mapa de territorios indígenas y proyectos visitados"></div>
- 
+    <main id="app">
+        <!-- Mapa -->
+        <div id="map" aria-label="Mapa de territorios indígenas y proyectos visitados"></div>
+
         <!-- Panel de indicadores -->
-<section id="kpi-panel" class="kpi-container" aria-label="Indicadores generales">
-<div class="kpi-card">
-<span class="kpi-title">Territorios</span>
-<span id="kpi-territorios" class="kpi-value">0</span>
-</div>
-<div class="kpi-card">
-<span class="kpi-title">Visitas / Proyectos</span>
-<span id="kpi-visitas" class="kpi-value">0</span>
-</div>
-</section>
- 
+        <section id="kpi-panel" class="kpi-container" aria-label="Indicadores generales">
+            <div class="kpi-card">
+                <span class="kpi-title">Territorios</span>
+                <span id="kpi-territorios" class="kpi-value">0</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-title">Visitas / Proyectos</span>
+                <span id="kpi-visitas" class="kpi-value">0</span>
+            </div>
+        </section>
+
         <!-- Buscador -->
-<div class="search-container">
-<label class="visually-hidden" for="buscador">Buscar territorio o proyecto</label>
-<input type="search" id="buscador" placeholder="🔍 Buscar territorio o proyecto..." autocomplete="off">
-</div>
- 
+        <div class="search-container">
+            <input type="search" id="buscador" placeholder="🔍 Buscar territorio o proyecto..." autocomplete="off">
+        </div>
+
         <!-- Selector de mapa base -->
-<div class="basemap-selector">
-<label class="visually-hidden" for="select-basemap">Mapa base</label>
-<select id="select-basemap">
-<option value="osm">Mapa estándar (OSM)</option>
-<option value="carto">Gris limpio (CartoDB)</option>
-<option value="esri">Satélite (Esri)</option>
-</select>
-</div>
- 
+        <div class="basemap-selector">
+            <select id="select-basemap">
+                <option value="osm">Mapa estándar (OSM)</option>
+                <option value="carto">Gris limpio (CartoDB)</option>
+                <option value="esri">Satélite (Esri)</option>
+            </select>
+        </div>
+
         <!-- Gráfico -->
-<section class="stats-panel" aria-label="Estadística de visitas">
-<h2>Visitas por día</h2>
-<div class="chart-container">
-<canvas id="visitasChart" aria-label="Gráfico de visitas por fecha"></canvas>
-</div>
-</section>
- 
-        <!-- Filtro temporal -->
-<section id="timeline-control" class="timeline-control" aria-label="Filtro temporal de proyectos">
-<div class="timeline-heading">
-<div>
-<h2>Filtro temporal</h2>
-<span id="timeline-year-label" class="timeline-year-label">Todos los años</span>
-</div>
-<button id="timeline-reset" class="timeline-reset" type="button">Mostrar todos</button>
-</div>
-<label class="visually-hidden" for="timeline-range">Mostrar proyectos visitados hasta el año seleccionado</label>
-<input id="timeline-range" type="range" min="2000" max="2026" value="2026" step="1" disabled>
-<div class="timeline-endpoints">
-<span id="timeline-min-label">—</span>
-<span id="timeline-max-label">—</span>
-</div>
-<p id="timeline-count" class="timeline-count">Cargando proyectos...</p>
-</section>
- 
+        <section class="stats-panel" aria-label="Estadística de visitas">
+            <h2>Visitas por día</h2>
+            <div class="chart-container">
+                <canvas id="visitasChart" aria-label="Gráfico de visitas por fecha"></canvas>
+            </div>
+        </section>
+
         <!-- Ficha del territorio seleccionado -->
-<aside class="sidebar" aria-label="Información del territorio seleccionado">
-<div class="header-territorio">
-<small>TERRITORIO SELECCIONADO</small>
-<h1 id="info-nombre">Haz clic en un territorio</h1>
-<div class="badges-programa">
-<span id="badge-cref" class="tag-programa tag-inactive">CREF</span>
-<span id="badge-paft" class="tag-programa tag-inactive">PAFT</span>
-</div>
-</div>
- 
+        <aside class="sidebar" aria-label="Información del territorio seleccionado">
+            <div class="header-territorio">
+                <small>TERRITORIO SELECCIONADO</small>
+                <h1 id="info-nombre">Haz clic en un territorio</h1>
+                <div class="badges-programa">
+                    <span id="badge-cref" class="tag-programa tag-inactive">CREF</span>
+                    <span id="badge-paft" class="tag-programa tag-inactive">PAFT</span>
+                </div>
+            </div>
+
             <div class="card-info">
-<span class="label-titulo">Decreto de creación</span>
-<span id="info-decreto" class="valor-destacado">—</span>
-</div>
- 
+                <span class="label-titulo">Decreto de creación</span>
+                <span id="info-decreto" class="valor-destacado">—</span>
+            </div>
+
             <div class="card-info">
-<span class="label-titulo">Bloque</span>
-<span id="info-bloque" class="valor-texto">—</span>
-</div>
- 
+                <span class="label-titulo">Bloque</span>
+                <span id="info-bloque" class="valor-texto">—</span>
+            </div>
+
             <div class="card-info desembolsos-box">
-<span class="label-titulo">Desembolsos REDD+</span>
-<div class="desembolsos-flex">
-<div class="desembolso-item">
-<small>1.er desembolso</small>
-<span id="info-des1">—</span>
-</div>
-<div class="divider-v" aria-hidden="true"></div>
-<div class="desembolso-item">
-<small>2.º desembolso</small>
-<span id="info-des2">—</span>
-</div>
-</div>
-</div>
- 
+                <span class="label-titulo">Desembolsos REDD+</span>
+                <div class="desembolsos-flex">
+                    <div class="desembolso-item">
+                        <small>1.er desembolso</small>
+                        <span id="info-des1">—</span>
+                    </div>
+                    <div class="divider-v" aria-hidden="true"></div>
+                    <div class="desembolso-item">
+                        <small>2.º desembolso</small>
+                        <span id="info-des2">—</span>
+                    </div>
+                </div>
+            </div>
+
             <div class="card-info">
-<span class="label-titulo">Área efectiva aprobada por año (ha)</span>
-<table class="tabla-anios">
-<thead>
-<tr><th scope="col">Año</th><th scope="col">Área (ha)</th></tr>
-</thead>
-<tbody>
-<tr><td>2017</td><td id="ae-2017">—</td></tr>
-<tr><td>2018</td><td id="ae-2018">—</td></tr>
-<tr><td>2019</td><td id="ae-2019">—</td></tr>
-<tr><td>2020</td><td id="ae-2020">—</td></tr>
-<tr><td>2021</td><td id="ae-2021">—</td></tr>
-<tr><td>2022</td><td id="ae-2022">—</td></tr>
-<tr><td>2023</td><td id="ae-2023">—</td></tr>
-<tr><td>2024</td><td id="ae-2024">—</td></tr>
-</tbody>
-</table>
-</div>
-</aside>
- 
+                <span class="label-titulo">Área efectiva aprobada por año (ha)</span>
+                <table class="tabla-anios">
+                    <thead>
+                        <tr><th scope="col">Año</th><th scope="col">Área (ha)</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>2017</td><td id="ae-2017">—</td></tr>
+                        <tr><td>2018</td><td id="ae-2018">—</td></tr>
+                        <tr><td>2019</td><td id="ae-2019">—</td></tr>
+                        <tr><td>2020</td><td id="ae-2020">—</td></tr>
+                        <tr><td>2021</td><td id="ae-2021">—</td></tr>
+                        <tr><td>2022</td><td id="ae-2022">—</td></tr>
+                        <tr><td>2023</td><td id="ae-2023">—</td></tr>
+                        <tr><td>2024</td><td id="ae-2024">—</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </aside>
+
         <div id="data-status" class="data-status" role="status" aria-live="polite">Cargando datos geográficos...</div>
-</main>
- 
-    <!-- Scripts: Leaflet debe cargarse antes de sus complementos -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.min.js">
-    <script src="https://cdn.jsdelivr.net/npm/leaflet-groupedlayercontrol@0.6.1/dist/leaflet.groupedlayercontrol.min…
-<script src="script.js"></script>
+    </main>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
