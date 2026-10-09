@@ -1,749 +1,419 @@
+/* ============================================================
+   GEOVISOR REDD+ — style.css
+   Estilos responsivos para mapa, ficha, controles y popups.
+   ============================================================ */
+ 
 :root {
-  --ink: #173b36;
-  --muted: #647773;
-  --teal: #0f766e;
-  --teal-light: #e8f5f2;
-  --line: #dce7e3;
-  --surface: #ffffff;
-  --bg: #f3f7f5;
-  --shadow: 0 8px 28px rgba(19, 57, 49, 0.08);
+    --verde-principal: #0f766e;
+    --verde-claro: #14b8a6;
+    --texto-principal: #1e293b;
+    --texto-secundario: #64748b;
+    --borde: #e2e8f0;
+    --fondo-tarjeta: rgba(255, 255, 255, 0.96);
+    --sombra-panel: 0 8px 26px rgba(15, 23, 42, 0.14);
 }
  
 * {
-  box-sizing: border-box;
+    box-sizing: border-box;
 }
  
 html,
-body {
-  height: 100%;
-  margin: 0;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system,
-    "Segoe UI", sans-serif;
-  color: #203b36;
-  background: var(--bg);
+body,
+#app {
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    margin: 0;
+    padding: 0;
 }
  
 body {
-  min-height: 100vh;
+    overflow: hidden;
+    color: var(--texto-principal);
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: #e2e8f0;
 }
  
-/* ========================================
-   ENCABEZADO
-======================================== */
- 
-.topbar {
-  min-height: 76px;
-  background: #ffffff;
-  border-bottom: 1px solid var(--line);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 12px 24px;
-  position: relative;
-  z-index: 500;
+#map {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    background: #e2e8f0;
 }
  
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.visually-hidden {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
 }
  
-.brand-mark {
-  width: 42px;
-  height: 42px;
-  border-radius: 13px;
-  display: grid;
-  place-items: center;
-  background: var(--teal);
-  color: #ffffff;
-  font-weight: 800;
-  letter-spacing: -1px;
-}
- 
-.brand strong {
-  display: block;
-  color: var(--ink);
-  font-size: 17px;
-}
- 
-.brand small {
-  display: block;
-  color: var(--muted);
-  font-size: 11px;
-  margin-top: 3px;
-}
- 
-/* ========================================
-   TARJETAS KPI
-======================================== */
- 
+/* Indicadores superiores */
 .kpi-container {
-  display: flex;
-  gap: 10px;
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 1000;
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
 }
  
 .kpi-card {
-  min-width: 128px;
-  padding: 8px 14px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: #fbfdfc;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+    min-width: 108px;
+    padding: 9px 14px;
+    border: 1px solid rgba(226, 232, 240, 0.85);
+    border-radius: 10px;
+    background: var(--fondo-tarjeta);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.10);
+    text-align: center;
 }
  
 .kpi-title {
-  font-size: 11px;
-  color: var(--muted);
-  font-weight: 600;
+    display: block;
+    margin-bottom: 2px;
+    color: var(--texto-secundario);
+    font-size: 0.62rem;
+    font-weight: 750;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
 }
  
 .kpi-value {
-  font-size: 22px;
-  line-height: 1.2;
-  color: var(--teal);
-  font-weight: 750;
+    color: var(--verde-principal);
+    font-size: 1.15rem;
+    font-weight: 800;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
 }
  
-/* ========================================
-   DISTRIBUCIÓN GENERAL
-======================================== */
- 
-.app-layout {
-  display: grid;
-  grid-template-columns: minmax(310px, 370px) minmax(0, 1fr);
-  gap: 16px;
-  padding: 16px;
-  height: calc(100vh - 76px);
-  min-height: 620px;
+/* Buscador */
+.search-container {
+    position: absolute;
+    top: 82px;
+    right: 15px;
+    z-index: 1000;
+    width: 280px;
 }
  
-.left-column {
-  min-height: 0;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding-right: 2px;
+.search-container input {
+    display: block;
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 9px;
+    outline: none;
+    background: rgba(255, 255, 255, 0.97);
+    color: var(--texto-principal);
+    font-family: inherit;
+    font-size: 0.84rem;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.10);
+    transition: border-color 160ms ease, box-shadow 160ms ease;
 }
  
-.panel {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  box-shadow: var(--shadow);
-  padding: 16px;
+.search-container input:focus {
+    border-color: var(--verde-principal);
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14), 0 4px 14px rgba(0, 0, 0, 0.10);
 }
  
-/* ========================================
-   BUSCADOR Y MAPA BASE
-======================================== */
- 
-.search-panel label,
-.basemap-row label {
-  font-size: 11px;
-  font-weight: 750;
-  color: var(--muted);
-  display: block;
-  margin-bottom: 7px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+/* Selector de mapa base */
+.basemap-selector {
+    position: absolute;
+    right: 15px;
+    bottom: 20px;
+    z-index: 1000;
 }
  
-input[type="search"],
-select {
-  width: 100%;
-  border: 1px solid #cbd9d4;
-  background: #ffffff;
-  color: #24423b;
-  border-radius: 10px;
-  padding: 11px 12px;
-  font: inherit;
-  font-size: 13px;
-  outline: none;
+.basemap-selector select {
+    max-width: 220px;
+    padding: 9px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 9px;
+    outline: none;
+    background: #ffffff;
+    color: #334155;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    cursor: pointer;
 }
  
-input[type="search"]:focus,
-select:focus {
-  border-color: var(--teal);
-  box-shadow: 0 0 0 3px #0f766e1a;
-}
- 
-.basemap-row {
-  margin-top: 14px;
-}
- 
-/* ========================================
-   FICHA TERRITORIAL
-======================================== */
- 
-.panel-eyebrow {
-  font-size: 10px;
-  letter-spacing: 0.13em;
-  font-weight: 800;
-  color: var(--teal);
-  margin-bottom: 8px;
+/* Ficha lateral del territorio */
+.sidebar {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    z-index: 1000;
+    width: 380px;
+    max-height: calc(100vh - 30px);
+    padding: 18px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-radius: 13px;
+    background: var(--fondo-tarjeta);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    box-shadow: var(--sombra-panel);
+    color: var(--texto-principal);
+    scrollbar-color: #cbd5e1 transparent;
+    scrollbar-width: thin;
 }
  
 .header-territorio {
-  padding-bottom: 13px;
-  border-bottom: 1px solid var(--line);
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--borde);
 }
  
-.header-territorio h2 {
-  font-size: 21px;
-  line-height: 1.25;
-  margin: 0 0 12px;
-  color: var(--ink);
-  overflow-wrap: anywhere;
+.header-territorio > small {
+    color: var(--texto-secundario);
+    font-size: 0.64rem;
+    font-weight: 800;
+    letter-spacing: 0.10em;
+}
+ 
+.header-territorio h1 {
+    margin: 5px 0 7px;
+    color: var(--verde-principal);
+    font-size: 1.22rem;
+    font-weight: 750;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
 }
  
 .badges-programa {
-  display: flex;
-  gap: 7px;
-  flex-wrap: wrap;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 7px;
 }
  
 .tag-programa {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  border-radius: 999px;
-  padding: 5px 9px;
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 3px 10px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
 }
  
 .tag-active {
-  background: #dff5e8;
-  color: #17683d;
+    border-color: #99f6e4;
+    background: #ccfbf1;
+    color: #0f766e;
 }
  
 .tag-inactive {
-  background: #edf1ef;
-  color: #788783;
+    border-color: #e2e8f0;
+    background: #f1f5f9;
+    color: #94a3b8;
 }
  
 .card-info {
-  padding: 13px 0;
-  border-bottom: 1px solid #edf2ef;
-}
- 
-.card-info:last-child {
-  border-bottom: 0;
-  padding-bottom: 0;
+    margin-bottom: 9px;
+    padding: 10px 12px;
+    border: 1px solid #edf2f7;
+    border-radius: 9px;
+    background: #f8fafc;
 }
  
 .label-titulo {
-  display: block;
-  font-size: 11px;
-  color: var(--muted);
-  font-weight: 700;
-  margin-bottom: 7px;
+    display: block;
+    margin-bottom: 4px;
+    color: var(--texto-secundario);
+    font-size: 0.67rem;
+    font-weight: 800;
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
 }
  
 .valor-destacado {
-  font-size: 14px;
-  font-weight: 750;
-  color: var(--ink);
+    color: #0f172a;
+    font-size: 0.9rem;
+    font-weight: 650;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
 }
  
 .valor-texto {
-  font-size: 13px;
-  color: #35524b;
+    color: #334155;
+    font-size: 0.85rem;
+    font-weight: 550;
+    overflow-wrap: anywhere;
 }
  
-/* ========================================
-   DESEMBOLSOS
-======================================== */
- 
+/* Desembolsos */
 .desembolsos-flex {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr);
-  gap: 12px;
+    display: flex;
+    align-items: stretch;
+    justify-content: space-around;
+    gap: 8px;
+    margin-top: 7px;
+    text-align: center;
 }
  
-.desembolsos-flex > div:not(.divider-v) {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.desembolso-item {
+    flex: 1 1 0;
+    min-width: 0;
 }
  
 .desembolsos-flex small {
-  font-size: 10px;
-  color: var(--muted);
-  font-weight: 700;
+    display: block;
+    margin-bottom: 6px;
+    color: var(--texto-secundario);
+    font-size: 0.64rem;
+    line-height: 1.25;
 }
  
 .desembolsos-flex span {
-  font-size: 12px;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
+    color: #0d9488;
+    font-size: 0.84rem;
+    font-weight: 750;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+ 
+.desembolsos-flex .monto-usd {
+    color: #64748b;
+    font-size: 0.70rem;
+    font-weight: 500;
+}
+ 
+.desembolsos-flex .fecha-desembolso {
+    display: inline-block;
+    margin-top: 3px;
+    color: #0f766e;
+    font-size: 0.69rem;
+    font-weight: 650;
+}
+ 
+.desembolsos-flex .desembolso-vacio {
+    color: #94a3b8;
+    font-size: 0.78rem;
+    font-weight: 500;
 }
  
 .divider-v {
-  background: var(--line);
+    flex: 0 0 1px;
+    width: 1px;
+    margin: 4px 0;
+    background: #cbd5e1;
 }
  
-.disbursement-date {
-  display: inline-block;
-  margin-top: 2px;
-  color: var(--teal);
-  font-size: 11px;
-  font-weight: 700;
-}
- 
-.muted {
-  color: #94a3b8;
-}
- 
-/* ========================================
-   TABLA DE ÁREAS
-======================================== */
- 
-.table-scroll {
-  max-height: 210px;
-  overflow: auto;
-}
- 
+/* Tabla de áreas */
 .tabla-anios {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-}
- 
-.tabla-anios th {
-  text-align: left;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--muted);
-  background: #f5f9f7;
+    width: 100%;
+    margin-top: 6px;
+    border-collapse: collapse;
+    font-size: 0.82rem;
 }
  
 .tabla-anios th,
 .tabla-anios td {
-  padding: 7px 9px;
-  border-bottom: 1px solid #eaf0ed;
+    padding: 5px 7px;
+    border-bottom: 1px solid #edf2f7;
+    text-align: left;
 }
  
-.tabla-anios td:last-child {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
+.tabla-anios th {
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 0.72rem;
+    font-weight: 750;
 }
  
-.tabla-anios tr:last-child td {
-  border-bottom: 0;
+.tabla-anios td:last-child,
+.tabla-anios th:last-child {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
 }
  
-/* ========================================
-   GRÁFICO
-======================================== */
- 
-.panel-heading h3 {
-  margin: 0;
-  font-size: 15px;
-  color: var(--ink);
+.tabla-anios tbody tr:last-child td {
+    border-bottom: 0;
 }
  
-.chart-container {
-  height: 185px;
-  margin-top: 12px;
-  position: relative;
+/* Controles Leaflet y grupos de capas */
+.leaflet-top.leaflet-right {
+    top: 135px;
+    right: 15px;
 }
  
-/* ========================================
-   MAPA
-======================================== */
- 
-.map-column {
-  position: relative;
-  min-width: 0;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.leaflet-control-layers,
+.leaflet-control-layers-expanded {
+    border: 1px solid rgba(226, 232, 240, 0.9) !important;
+    border-radius: 10px !important;
+    background: rgba(255, 255, 255, 0.97) !important;
+    color: #334155;
+    box-shadow: 0 5px 18px rgba(0, 0, 0, 0.12) !important;
 }
  
-#map {
-  flex: 1;
-  min-height: 350px;
-  width: 100%;
-  border-radius: 17px;
-  overflow: hidden;
-  border: 1px solid #d2dfda;
-  box-shadow: var(--shadow);
-  background: #e7efeb;
-}
- 
-.leaflet-container {
-  font-family: inherit;
-}
- 
-/* ========================================
-   CONTROL DE CAPAS LEAFLET
-======================================== */
- 
-.leaflet-control-layers {
-  border: 1px solid #d7e3de !important;
-  border-radius: 11px !important;
-  box-shadow: 0 5px 20px #163f3517 !important;
-  padding: 7px 9px !important;
-  color: #26443d;
-}
- 
-.leaflet-control-layers-group-name {
-  font-weight: 800 !important;
-  color: var(--ink) !important;
-  font-size: 12px;
+.leaflet-control-layers-expanded {
+    max-width: min(330px, calc(100vw - 30px));
+    max-height: calc(100vh - 300px);
+    padding: 10px 12px !important;
+    overflow: auto;
+    font-size: 0.76rem;
 }
  
 .leaflet-control-layers-list {
-  font-size: 12px;
+    margin-bottom: 0;
 }
  
-.leaflet-control-layers label {
-  margin: 5px 0;
+.leaflet-control-layers-selector {
+    margin-right: 6px;
+    accent-color: var(--verde-principal);
 }
  
-/* ========================================
-   ICONOS SVG
-======================================== */
- 
-.project-svg-icon {
-  background: transparent;
-  border: 0;
+.leaflet-control-layers-group-name {
+    display: block;
+    margin: 8px 0 5px;
+    padding: 5px 0;
+    border-bottom: 1px solid #e2e8f0;
+    color: #0f766e;
+    font-weight: 800;
 }
  
-.project-svg-icon svg {
-  display: block;
-  filter: drop-shadow(0 2px 2px #163f3533);
+.leaflet-control-layers-group label {
+    margin: 4px 0;
+    line-height: 1.3;
 }
  
-/* ========================================
-   AGRUPACIÓN DE PUNTOS
-======================================== */
- 
-.marker-cluster-small,
-.marker-cluster-medium,
-.marker-cluster-large {
-  background-color: #0f766e35;
-  border-radius: 50%;
+.leaflet-control-layers-group label span {
+    overflow-wrap: anywhere;
 }
  
-.marker-cluster-small div,
-.marker-cluster-medium div,
-.marker-cluster-large div {
-  background: #0f766e;
-  color: #ffffff;
-  font-weight: 800;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Iconos SVG de los proyectos */
+.project-div-icon {
+    border: 0 !important;
+    background: transparent !important;
 }
  
-.marker-cluster-small div {
-  background: #0f766e;
-}
- 
-.marker-cluster-medium div {
-  background: #0b625b;
-}
- 
-.marker-cluster-large div {
-  background: #134e4a;
-}
- 
-/* ========================================
-   POPUPS DE PROYECTOS
-======================================== */
- 
-.leaflet-popup-content-wrapper {
-  border-radius: 13px;
-  box-shadow: 0 10px 35px #163f3526;
-}
- 
-.leaflet-popup-content {
-  margin: 14px 16px;
-  min-width: 190px;
-  max-width: 290px;
-}
- 
-.popup-proyecto h3 {
-  font-size: 15px;
-  color: var(--ink);
-  margin: 0 0 10px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--line);
-  overflow-wrap: anywhere;
-}
- 
-.popup-proyecto p {
-  font-size: 12px;
-  line-height: 1.5;
-  margin: 6px 0;
-  color: #47615a;
-  overflow-wrap: anywhere;
-}
- 
-.popup-proyecto strong {
-  color: #24473e;
-}
- 
-.popup-img-preview {
-  font-size: 11px;
-  color: var(--teal);
-  background: #f1f8f5;
-  padding: 8px;
-  border-radius: 7px;
-  margin-top: 9px;
-}
- 
-/* ========================================
-   FILTRO TEMPORAL
-======================================== */
- 
-.time-filter {
-  background: #ffffff;
-  border: 1px solid var(--line);
-  border-radius: 15px;
-  padding: 13px 17px;
-  box-shadow: var(--shadow);
-}
- 
-.time-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
- 
-.time-heading strong {
-  display: block;
-  font-size: 13px;
-  color: var(--ink);
-}
- 
-.time-heading small {
-  display: block;
-  font-size: 11px;
-  color: var(--muted);
-  margin-top: 3px;
-}
- 
-.year-pill {
-  font-size: 12px;
-  font-weight: 800;
-  color: var(--teal);
-  background: var(--teal-light);
-  padding: 7px 11px;
-  border-radius: 999px;
-  white-space: nowrap;
-}
- 
-.slider-row {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) 40px;
-  gap: 10px;
-  align-items: center;
-  margin-top: 10px;
-  font-size: 10px;
-  color: var(--muted);
-}
- 
-input[type="range"] {
-  width: 100%;
-  accent-color: var(--teal);
-  cursor: pointer;
-}
- 
-.time-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 8px;
-  color: var(--muted);
-  font-size: 11px;
-}
- 
-button {
-  border: 1px solid #c8ddd6;
-  background: #f3faf7;
-  color: var(--teal);
-  border-radius: 8px;
-  padding: 6px 10px;
-  font: inherit;
-  font-size: 11px;
-  font-weight: 750;
-  cursor: pointer;
-}
- 
-button:hover {
-  background: #e2f3ed;
-}
- 
-button:focus-visible {
-  outline: 2px solid var(--teal);
-  outline-offset: 3px;
-}
- 
-/* ========================================
-   RESALTADO DE TERRITORIOS
-======================================== */
- 
-.territorio-highlight {
-  filter: drop-shadow(0 0 7px #f5b942);
-  animation: territorioPulse 1.25s ease-in-out 2;
-}
- 
-.leaflet-interactive {
-  transition:
-    fill-opacity 0.2s ease,
-    stroke-width 0.2s ease;
-}
- 
-@keyframes territorioPulse {
-  0%,
-  100% {
-    fill-opacity: 0.4;
-    stroke-opacity: 1;
-  }
- 
-  50% {
-    fill-opacity: 0.78;
-    stroke-opacity: 0.65;
-  }
-}
- 
-/* ========================================
-   MENSAJES DE ERROR
-======================================== */
- 
-.load-error {
-  position: fixed;
-  z-index: 2000;
-  left: 16px;
-  right: 16px;
-  bottom: 16px;
-  background: #fff1f0;
-  border: 1px solid #f1b7b1;
-  color: #8d2d24;
-  padding: 13px 16px;
-  border-radius: 10px;
-  box-shadow: 0 6px 24px #0002;
-  font-size: 13px;
-  line-height: 1.5;
-}
- 
-/* ========================================
-   TABLET
-======================================== */
- 
-@media (max-width: 900px) {
-  .app-layout {
-    grid-template-columns: 300px minmax(0, 1fr);
-    padding: 10px;
-    gap: 10px;
-  }
- 
-  .topbar {
-    padding: 10px 14px;
-  }
- 
-  .kpi-card {
-    min-width: 105px;
-  }
-}
- 
-/* ========================================
-   MÓVILES
-======================================== */
- 
-@media (max-width: 680px) {
-  .topbar {
-    align-items: flex-start;
-    flex-direction: column;
-  }
- 
-  .kpi-container {
-    width: 100%;
-  }
- 
-  .kpi-card {
-    flex: 1;
-    min-width: 0;
-  }
- 
-  .app-layout {
-    height: auto;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-  }
- 
-  .left-column {
+.project-icon-svg {
+    display: block;
+    width: 36px;
+    height: 42px;
     overflow: visible;
-  }
- 
-  .map-column {
-    height: 68vh;
-    min-height: 520px;
-  }
- 
-  #map {
-    min-height: 360px;
-  }
- 
-  .territory-panel {
-    order: 0;
-  }
- 
-  .stats-panel {
-    order: 1;
-  }
- 
-  .time-heading {
-    align-items: flex-start;
-  }
- 
-  .year-pill {
-    font-size: 11px;
-  }
- 
-  .brand small {
-    max-width: 260px;
-  }
+    filter: drop-shadow(0 2px 3px rgba(15, 23, 42, 0.30));
+    transform-origin: 50% 88%;
+    transition: transform 140ms ease, filter 140ms ease;
 }
  
-/* ========================================
-   PANTALLAS MUY PEQUEÑAS
-======================================== */
- 
-@media (max-width: 380px) {
-  .panel {
-    padding: 12px;
-  }
- 
-  .app-layout {
-    padding: 8px;
-  }
- 
-  .desembolsos-flex {
-    gap: 8px;
-  }
- 
-  .year-pill {
-    white-space: normal;
-    text-align: center;
-  }
- 
-  .slider-row {
-    grid-template-columns: 32px minmax(0, 1fr) 32px;
-    gap: 6px;
-  }
+.leaflet-marker-icon:hover .project-icon-svg {
+    filter: drop-shadow(0 3px 5px rgba(15, 23, 42, 0.38));
+    transform: translateY(-2px) scale(1.07);
 }
+ 
+/* Burbujas personal
