@@ -1,5 +1,6 @@
-// 1. Inicializar mapa y Panes para garantizar orden de capas (Z-Index estricto)
-const map = L.map('map').setView([9.25, -83.25], 9);
+// 1. Inicializar mapa y Panes para orden de capas estricto
+const map = L.map('map', { zoomControl: false }).setView([9.25, -83.25], 9);
+L.control.zoom({ position: 'bottomright' }).addTo(map);
 
 map.createPane('paneTerritorios');
 map.getPane('paneTerritorios').style.zIndex = 400;
@@ -24,7 +25,7 @@ document.getElementById('select-basemap').addEventListener('change', (e) => {
 const estiloNormal = { color: '#0f766e', weight: 1.5, fillColor: '#14b8a6', fillOpacity: 0.35, pane: 'paneTerritorios' };
 const estiloHover = { color: '#0f766e', weight: 3, fillColor: '#2dd4bf', fillOpacity: 0.55, pane: 'paneTerritorios' };
 
-// Colores según las clasificaciones exactas de tus puntos
+// Colores según clasificaciones de puntos
 const coloresCategorias = {
     "infraestructura comunitaria y social": "#2563eb",
     "infraestructura de servicios basicos": "#dc2626",
@@ -38,11 +39,10 @@ const coloresCategorias = {
 let allLayersSearch = [];
 let chartInstance = null;
 
-// Grupos principales para el menú de Leaflet
+// Grupos principales para el control de capas de Leaflet
 const capaTerritoriosGroup = L.layerGroup().addTo(map);
 const capaProyectosGroup = L.layerGroup().addTo(map);
 
-// Subcapas de categorías independientes para los proyectos dentro de su grupo
 const categoriasProyectos = {};
 
 const controlCapas = L.control.layers(null, {
@@ -69,7 +69,8 @@ fetch('datos/territorios.geojson')
                     mouseover: (e) => { e.target.setStyle(estiloHover); e.target.bringToFront(); },
                     mouseout: (e) => { geoLayer.resetStyle(e.target); },
                     click: (e) => {
-                        map.fitBounds(e.target.getBounds(), { padding: [40, 40] });
+                        // Transición fluida de cámara
+                        map.flyToBounds(e.target.getBounds(), { padding: [50, 50], duration: 1.2 });
                         document.getElementById('info-nombre').textContent = nombreTerritorio;
 
                         const clasif = (props.CLASIF || '').toUpperCase();
@@ -92,10 +93,10 @@ fetch('datos/territorios.geojson')
                             badgePaft.className = 'tag-programa tag-inactive';
                         }
 
-                        document.getElementById('info-decreto').textContent = props.DECRETO ? 'Decreto ' + props.DECRETO + ' (' + (props.AÑO || '') + ')' : 'No especificado';
+                        document.getElementById('info-decreto').textContent = props.DEcreto || props.DECRETO ? 'Decreto ' + (props.DECRETO || props.DEcreto) + ' (' + (props.AÑO || '') + ')' : 'No especificado';
                         document.getElementById('info-bloque').textContent = props.BLOQUE || 'N/D';
 
-                        // Enlace exacto con las columnas de desembolso de tu base de datos
+                        // Lectura precisa y robusta de desembolsos (crc, usd y fecha)
                         const fec1 = props['fec_desemb_1'];
                         const usd1 = props['monto_desemb_1_usd'];
                         const crc1 = props['monto_desemb_1_crc'];
@@ -105,20 +106,24 @@ fetch('datos/territorios.geojson')
                         const crc2 = props['monto_desemb_2_crc'];
 
                         const formatearDesembolso = (fec, usd, crc) => {
-                            if (!fec && (usd === undefined || usd === null) && (crc === undefined || crc === null)) {
-                                return '<span style="color:#94a3b8;">No asignado</span>';
+                            const hasCrc = crc !== undefined && crc !== null && crc !== '' && !isNaN(crc);
+                            const hasUsd = usd !== undefined && usd !== null && usd !== '' && !isNaN(usd);
+                            
+                            if (!fec && !hasCrc && !hasUsd) {
+                                return '<span style="color:#94a3b8; font-size:0.8rem;">No asignado</span>';
                             }
+
                             let html = '';
-                            if (crc !== undefined && crc !== null && crc !== '') {
-                                html += '<strong>₡' + Number(crc).toLocaleString() + '</strong><br>';
+                            if (hasCrc) {
+                                html += '<strong style="color:#0f766e; font-size:0.9rem;">₡' + Number(crc).toLocaleString('es-CR') + '</strong><br>';
                             }
-                            if (usd !== undefined && usd !== null && usd !== '') {
-                                html += '<small style="color:#64748b;">($' + Number(usd).toLocaleString() + ' USD)</small><br>';
+                            if (hasUsd) {
+                                html += '<small style="color:#64748b;">($' + Number(usd).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' USD)</small><br>';
                             }
                             if (fec) {
-                                html += '<span style="font-size:0.75rem; color:#0f766e; font-weight:600;">Año: ' + fec + '</span>';
+                                html += '<span style="font-size:0.75rem; color:#0f766e; font-weight:600;">Fecha/Año: ' + fec + '</span>';
                             }
-                            return html;
+                            return html || '<span style="color:#94a3b8; font-size:0.8rem;">No asignado</span>';
                         };
 
                         document.getElementById('info-des1').innerHTML = formatearDesembolso(fec1, usd1, crc1);
@@ -146,7 +151,7 @@ fetch('datos/puntos.geojson')
     .then(data => {
         document.getElementById('kpi-visitas').textContent = data.features.length;
 
-        // Gráfico de visitas por fecha exacta (DD/MM/YYYY)
+        // Gráfico de visitas por fecha exacta
         const fechasConteo = {};
         data.features.forEach(f => {
             const p = f.properties || {};
@@ -222,13 +227,13 @@ fetch('datos/puntos.geojson')
                     const catFormateada = p.Clasificacion || 'General';
                     const desc = p['4_Descripcin_de_proy'] || 'Sin descripción detallada.';
                     const inversionVal = p['5_Inversin_CREF'];
-                    const inversion = inversionVal !== undefined ? '₡' + Number(inversionVal).toLocaleString() + ' (~$' + (Number(inversionVal)/520).toFixed(2) + ' USD)' : 'N/D';
+                    const inversion = inversionVal !== undefined ? '₡' + Number(inversionVal).toLocaleString('es-CR') + ' (~$' + (Number(inversionVal)/520).toFixed(2) + ' USD)' : 'N/D';
                     const fecha = p['11_Fecha_de_visita'] || 'N/D';
                     const desembolso = p['8_Desembolso_CREF'] || 'N/D';
 
                     allLayersSearch.push({ layer, type: 'punto', name: nombreProj });
 
-                    // Popup de proyectos limpio (sin colaborador)
+                    // Popup limpio sin colaborador
                     layer.bindPopup(
                         '<div class="popup-proyecto">' +
                             '<h3>' + nombreProj + '</h3>' +
@@ -251,7 +256,7 @@ fetch('datos/puntos.geojson')
         });
     });
 
-// 4. Buscador Rápido Global corregido
+// 4. Buscador Rápido Global con animación fluida
 document.getElementById('buscador').addEventListener('input', (e) => {
     const query = e.target.value.toLowerCase().trim();
     if (query.length < 2) return;
@@ -259,10 +264,10 @@ document.getElementById('buscador').addEventListener('input', (e) => {
     const match = allLayersSearch.find(item => item.name && item.name.toLowerCase().includes(query));
     if (match) {
         if (match.type === 'territorio') {
-            map.fitBounds(match.layer.getBounds(), { padding: [50, 50] });
+            map.flyToBounds(match.layer.getBounds(), { padding: [50, 50], duration: 1.2 });
             match.layer.fire('click');
         } else {
-            map.setView(match.layer.getLatLng(), 15);
+            map.flyTo(match.layer.getLatLng(), 15, { duration: 1.2 });
             match.layer.openPopup();
         }
     }
