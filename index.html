@@ -1,125 +1,221 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geovisor REDD+ - Territorios y Proyectos</title>
-
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- Chart.js para estadísticas -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <!-- Estilos propios -->
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f766e">
+<title>Geovisor REDD+ - Territorios y Proyectos</title>
+ 
+  <!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+ 
+  <!-- Agrupamiento de puntos -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+ 
+  <!-- Control de capas agrupadas -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.groupedlayercontrol@0.6.1/dist/leaflet.groupedlayercontrol.min.css%22>
+ 
+  <!-- Estilos propios -->
+<link rel="stylesheet" href="style.css">
+ 
+  <!-- Gráficos -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-
-    <!-- KPI Cards Superiores -->
+ 
+  <header class="topbar">
+<div class="brand">
+<span class="brand-mark">R+</span>
+<div>
+<strong>Geovisor REDD+</strong>
+<small>Territorios indígenas y proyectos visitados</small>
+</div>
+</div>
+ 
     <div id="kpi-panel" class="kpi-container">
-        <div class="kpi-card">
-            <span class="kpi-title">Territorios</span>
-            <span id="kpi-territorios" class="kpi-value">0</span>
-        </div>
-        <div class="kpi-card">
-            <span class="kpi-title">Visitas / Proyectos</span>
-            <span id="kpi-visitas" class="kpi-value">0</span>
-        </div>
-    </div>
-
-    <!-- Buscador rápido -->
-    <div class="search-container">
-        <input type="text" id="buscador" placeholder="🔍 Buscar territorio o proyecto..." />
-    </div>
-
-    <!-- Selector de Mapa Base -->
-    <div class="basemap-selector">
-        <select id="select-basemap">
-            <option value="osm">Mapa Estándar (OSM)</option>
-            <option value="carto">Gris Limpio (CartoDB)</option>
-            <option value="esri">Satélite (Esri)</option>
-        </select>
-    </div>
-
-    <!-- Leyenda Flotante Interactiva -->
-    <div class="legend-panel">
-        <div class="legend-header" onclick="document.querySelector('.legend-content').classList.toggle('collapsed')">
-            <span>🎨 Leyenda y Categorías</span> <span>▼</span>
-        </div>
-        <div class="legend-content">
-            <div class="legend-item"><span class="dot" style="background:#2563eb;"></span> Inf. Comunitaria y Social</div>
-            <div class="legend-item"><span class="dot" style="background:#dc2626;"></span> Servicios Básicos</div>
-            <div class="legend-item"><span class="dot" style="background:#d97706;"></span> Educación, Cultura y Juventud</div>
-            <div class="legend-item"><span class="dot" style="background:#16a34a;"></span> Turismo y Emprendimientos</div>
-            <div class="legend-item"><span class="dot" style="background:#9333ea;"></span> Seguridad y Gestión Amb.</div>
-            <div class="legend-item"><span class="dot" style="background:#db2777;"></span> Ayuda Social y Mejoramiento</div>
-            <div class="legend-item"><span class="poly-box"></span> Territorios Indígenas</div>
-        </div>
-    </div>
-
-    <!-- Panel Estadístico / Gráfico de Visitas por Día -->
-    <div class="stats-panel">
-        <h4>Visitas por Día</h4>
-        <div class="chart-container">
-            <canvas id="visitasChart"></canvas>
-        </div>
-    </div>
-
-    <!-- Panel Lateral Izquierdo (Ficha del Territorio) -->
-    <div class="sidebar">
+<div class="kpi-card">
+<span class="kpi-title">Territorios</span>
+<span id="kpi-territorios" class="kpi-value">—</span>
+</div>
+ 
+      <div class="kpi-card">
+<span class="kpi-title">Visitas / Proyectos</span>
+<span id="kpi-visitas" class="kpi-value">—</span>
+</div>
+</div>
+</header>
+ 
+  <main class="app-layout">
+ 
+    <!-- PANEL IZQUIERDO -->
+<aside class="left-column">
+ 
+      <!-- BUSCADOR Y MAPA BASE -->
+<section class="panel search-panel">
+<label for="buscador">Buscar en el geovisor</label>
+ 
+        <input
+          type="search"
+          id="buscador"
+          placeholder="Territorio o nombre del proyecto…"
+          autocomplete="off"
+>
+ 
+        <div class="basemap-row">
+<label for="select-basemap">Mapa base</label>
+ 
+          <select id="select-basemap">
+<option value="osm">Mapa estándar (OSM)</option>
+<option value="carto">Gris limpio (CartoDB)</option>
+<option value="esri">Satélite (Esri)</option>
+</select>
+</div>
+</section>
+ 
+      <!-- FICHA DEL TERRITORIO -->
+<section class="panel territory-panel">
+ 
+        <div class="panel-eyebrow">FICHA TERRITORIAL</div>
+ 
         <div class="header-territorio">
-            <small>TERRITORIO SELECCIONADO</small>
-            <h2 id="info-nombre">Haz clic en un territorio</h2>
-            <div class="badges-programa">
-                <span id="badge-cref" class="tag-programa tag-inactive">CREF</span>
-                <span id="badge-paft" class="tag-programa tag-inactive">PAFT</span>
-            </div>
-        </div>
-
+<h2 id="info-nombre">Haz clic en un territorio</h2>
+ 
+          <div class="badges-programa">
+<span id="badge-cref" class="tag-programa tag-inactive">CREF</span>
+<span id="badge-paft" class="tag-programa tag-inactive">PAFT</span>
+</div>
+</div>
+ 
         <div class="card-info">
-            <span class="label-titulo">Decreto de Creación</span>
-            <span id="info-decreto" class="valor-destacado">-</span>
-        </div>
-
+<span class="label-titulo">Decreto de creación</span>
+<span id="info-decreto" class="valor-destacado">—</span>
+</div>
+ 
         <div class="card-info">
-            <span class="label-titulo">Bloque</span>
-            <span id="info-bloque" class="valor-texto">-</span>
-        </div>
-
-        <div class="card-info desembolsos-box">
-            <span class="label-titulo">Desembolsos REDD+</span>
-            <div class="desembolsos-flex">
-                <div><small>1.° Desembolso</small><span id="info-des1">-</span></div>
-                <div class="divider-v"></div>
-                <div><small>2.° Desembolso</small><span id="info-des2">-</span></div>
-            </div>
-        </div>
-
-        <div class="card-info">
-            <span class="label-titulo">Área Efectiva Aprobada por Año (ha)</span>
-            <table class="tabla-anios">
-                <thead>
-                    <tr><th>Año</th><th>Área (ha)</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td>2017</td><td id="ae-2017">-</td></tr>
-                    <tr><td>2018</td><td id="ae-2018">-</td></tr>
-                    <tr><td>2019</td><td id="ae-2019">-</td></tr>
-                    <tr><td>2020</td><td id="ae-2020">-</td></tr>
-                    <tr><td>2021</td><td id="ae-2021">-</td></tr>
-                    <tr><td>2022</td><td id="ae-2022">-</td></tr>
-                    <tr><td>2023</td><td id="ae-2023">-</td></tr>
-                    <tr><td>2024</td><td id="ae-2024">-</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div id="map"></div>
-
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- Script principal -->
-    <script src="script.js"></script>
+<span class="label-titulo">Bloque</span>
+<span id="info-bloque" class="valor-texto">—</span>
+</div>
+ 
+        <!-- DESEMBOLSOS -->
+<div class="card-info desembolsos-box">
+<span class="label-titulo">Desembolsos REDD+</span>
+ 
+          <div class="desembolsos-flex">
+<div>
+<small>1.er desembolso</small>
+<span id="info-des1">—</span>
+</div>
+ 
+            <div class="divider-v"></div>
+ 
+            <div>
+<small>2.º desembolso</small>
+<span id="info-des2">—</span>
+</div>
+</div>
+</div>
+ 
+        <!-- ÁREA EFECTIVA POR AÑO -->
+<div class="card-info">
+<span class="label-titulo">
+            Área efectiva aprobada por año (ha)
+</span>
+ 
+          <div class="table-scroll">
+<table class="tabla-anios">
+<thead>
+<tr>
+<th>Año</th>
+<th>Área (ha)</th>
+</tr>
+</thead>
+ 
+              <tbody>
+<tr><td>2017</td><td id="ae-2017">—</td></tr>
+<tr><td>2018</td><td id="ae-2018">—</td></tr>
+<tr><td>2019</td><td id="ae-2019">—</td></tr>
+<tr><td>2020</td><td id="ae-2020">—</td></tr>
+<tr><td>2021</td><td id="ae-2021">—</td></tr>
+<tr><td>2022</td><td id="ae-2022">—</td></tr>
+<tr><td>2023</td><td id="ae-2023">—</td></tr>
+<tr><td>2024</td><td id="ae-2024">—</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+ 
+      </section>
+ 
+      <!-- GRÁFICO -->
+<section class="panel stats-panel">
+<div class="panel-heading">
+<div>
+<div class="panel-eyebrow">ACTIVIDAD</div>
+<h3>Visitas por día</h3>
+</div>
+</div>
+ 
+        <div class="chart-container">
+<canvas id="visitasChart"></canvas>
+</div>
+</section>
+ 
+    </aside>
+ 
+    <!-- MAPA Y FILTRO TEMPORAL -->
+<section class="map-column" aria-label="Mapa interactivo">
+ 
+      <div id="map"></div>
+ 
+      <section class="time-filter" aria-label="Filtro temporal de proyectos">
+ 
+        <div class="time-heading">
+<div>
+<strong>Explorar proyectos por año</strong>
+<small>Filtra los puntos según la fecha de visita</small>
+</div>
+ 
+          <span id="year-label" class="year-pill">Todos los años</span>
+</div>
+ 
+        <div class="slider-row">
+<span id="year-min-label">Todos</span>
+ 
+          <input
+            id="year-slider"
+            type="range"
+            min="0"
+            max="1"
+            step="1"
+            value="0"
+            aria-label="Filtrar proyectos por año"
+>
+ 
+          <span id="year-max-label">—</span>
+</div>
+ 
+        <div class="time-actions">
+<button id="reset-year" type="button">Mostrar todos</button>
+<span id="year-count">Cargando proyectos…</span>
+</div>
+ 
+      </section>
+</section>
+ 
+  </main>
+ 
+  <!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+ 
+  <!-- MarkerCluster -->
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+ 
+  <!-- Control de capas agrupadas -->
+<script src="https://cdn.jsdelivr.net/npm/leaflet.groupedlayercontrol@0.6.1/dist/leaflet.groupedlayercontrol.min…
+ 
+  <!-- Script principal -->
+<script src="script.js"></script>
+ 
 </body>
 </html>
