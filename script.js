@@ -2,9 +2,10 @@
 
 // 1. Inicialización del mapa y paneles
 const map = L.map('map', {
-    zoomControl: true,
+    zoomControl: false,
     preferCanvas: false
 }).setView([9.25, -83.25], 9);
+L.control.zoom({ position: 'bottomright' }).addTo(map);
 
 map.createPane('paneTerritorios');
 map.getPane('paneTerritorios').style.zIndex = 400;
@@ -73,19 +74,19 @@ function formatNumber(value, decimals = 2) {
     return new Intl.NumberFormat('es-CR', { maximumFractionDigits: decimals, minimumFractionDigits: 0 }).format(num);
 }
 
-// 5. Formateador exacto basado en tus columnas de desembolso
+// 5. Formateador exacto basado en tus columnas de desembolso (fec_desemb_1, monto_desemb_1_usd, monto_desemb_1_crc, etc.)
 function formatearDesembolso(fecha, usd, crc) {
     const tieneFecha = fecha !== undefined && fecha !== null && String(fecha).trim() !== '';
     const montoUSD = parseNumber(usd);
     const montoCRC = parseNumber(crc);
 
     if (!tieneFecha && montoUSD === null && montoCRC === null) {
-        return '<span style="color:#94a3b8;">No asignado</span>';
+        return '<span style="color:#94a3b8; font-size:0.8rem;">No asignado</span>';
     }
 
     let html = '';
     if (montoCRC !== null) {
-        html += '<strong style="color:#0f766e;">₡' + formatNumber(montoCRC, 2) + '</strong><br>';
+        html += '<strong style="color:#0f766e; font-size:0.9rem;">₡' + formatNumber(montoCRC, 2) + '</strong><br>';
     }
     if (montoUSD !== null) {
         html += '<small style="color:#64748b;">($" + formatNumber(montoUSD, 2) + " USD)</small><br>';
@@ -93,7 +94,7 @@ function formatearDesembolso(fecha, usd, crc) {
     if (tieneFecha) {
         html += '<span style="font-size:0.75rem; color:#0f766e; font-weight:600;">Fecha: ' + String(fecha).trim() + '</span>';
     }
-    return html || '<span style="color:#94a3b8;">No asignado</span>';
+    return html || '<span style="color:#94a3b8; font-size:0.8rem;">No asignado</span>';
 }
 
 // Actualizar control de capas en Leaflet de forma limpia
@@ -146,7 +147,7 @@ fetch('datos/territorios.geojson')
                             document.getElementById('info-decreto').textContent = props.DECRETO ? 'Decreto ' + props.DECRETO + (props.AÑO ? ' (' + props.AÑO + ')' : '') : 'No especificado';
                             document.getElementById('info-bloque').textContent = props.BLOQUE || 'N/D';
 
-                            // Lectura exacta utilizando tus columnas de desembolso
+                            // Enlace exacto con las columnas de desembolso de tu base de datos
                             document.getElementById('info-des1').innerHTML = formatearDesembolso(props['fec_desemb_1'], props['monto_desemb_1_usd'], props['monto_desemb_1_crc']);
                             document.getElementById('info-des2').innerHTML = formatearDesembolso(props['fec_desemb_2'], props['monto_desemb_2_usd'], props['monto_desemb_2_crc']);
 
@@ -249,6 +250,7 @@ fetch('datos/puntos.geojson')
 
                     allLayersSearch.push({ type: 'punto', name: nombreProj, layer });
 
+                    // Popup limpio sin colaborador
                     layer.bindPopup(
                         '<div class="popup-proyecto">' +
                             '<h3>' + nombreProj + '</h3>' +
@@ -275,7 +277,7 @@ fetch('datos/puntos.geojson')
         console.error(err);
     });
 
-// 8. Buscador rápido
+// 8. Buscador rápido con animación fluida
 document.getElementById('buscador').addEventListener('input', (e) => {
     const query = e.target.value.toLowerCase().trim();
     if (query.length < 2) return;
@@ -283,9 +285,10 @@ document.getElementById('buscador').addEventListener('input', (e) => {
     const match = allLayersSearch.find(item => item.name && item.name.toLowerCase().includes(query));
     if (match) {
         if (match.type === 'territorio') {
+            map.flyToBounds(match.layer.getBounds(), { padding: [50, 50], duration: 1.2 });
             match.layer.fire('click');
         } else {
-            map.setView(match.layer.getLatLng(), 15);
+            map.flyTo(match.layer.getLatLng(), 15, { duration: 1.2 });
             match.layer.openPopup();
         }
     }
