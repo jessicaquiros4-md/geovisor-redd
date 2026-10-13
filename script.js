@@ -42,32 +42,70 @@ const estiloSeleccionado = { color: '#115e59', weight: 3, fillColor: '#2dd4bf', 
 
 let selectedTerritoryLayer = null;
 let chartInstance = null;
-let layerControl = null;
 
 const allLayersSearch = [];
-const territoriosPorNombre = {};
-const proyectosPorCategoria = {};
 
-// Colores por categoría de proyectos
-const coloresCategorias = {
-    "infraestructura comunitaria y social": "#2563eb",
-    "infraestructura de servicios basicos": "#dc2626",
-    "educacion, cultura y juventud": "#d97706",
-    "turismo sostenible y emprendimientos productivos": "#16a34a",
-    "seguridad, vigilancia y gestion ambiental": "#9333ea",
-    "ayuda social y mejoramiento de infraestructura": "#db2777"
+// Zoom a partir del cual los puntos pasan de un punto simple a su símbolo
+const ZOOM_SIMBOLOS = 12;
+
+// Color y símbolo por categoría de proyecto (las claves van sin tildes y en minúscula)
+const categoriasConfig = {
+    "infraestructura comunitaria y social": { color: "#2563eb", simbolo: "🏘️" },
+    "infraestructura de servicios basicos": { color: "#dc2626", simbolo: "💧" },
+    "educacion, cultura y juventud": { color: "#d97706", simbolo: "🎓" },
+    "turismo sostenible y emprendimientos productivos": { color: "#16a34a", simbolo: "🌿" },
+    "seguridad, vigilancia y gestion ambiental": { color: "#9333ea", simbolo: "🛡️" },
+    "ayuda social y mejoramiento de infraestructura": { color: "#db2777", simbolo: "🤝" }
 };
+const categoriaPorDefecto = { color: "#0f766e", simbolo: "📍" };
 
 // 4. Helpers de formato y normalización
 function normalizeText(value) {
     return String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
 }
 
+function getCategoriaConfig(nombre) {
+    return categoriasConfig[normalizeText(nombre)] || categoriaPorDefecto;
+}
+
+// Busca una propiedad ignorando mayúsculas y tildes en el nombre de la columna
+function getProp(props, ...nombres) {
+    const claves = Object.keys(props || {});
+    for (const nombre of nombres) {
+        const buscado = normalizeText(nombre);
+        const clave = claves.find((k) => normalizeText(k) === buscado);
+        if (clave !== undefined && props[clave] !== null && props[clave] !== '') return props[clave];
+    }
+    return undefined;
+}
+
 function parseNumber(value) {
     if (typeof value === 'number') return Number.isFinite(value) ? value : null;
-    if (!value) return null;
-    let raw = String(value).trim().replace(/[₡$\s]/g, '');
-    raw = raw.replace(/\./g, '').replace(',', '.');
+    if (value === null || value === undefined) return null;
+
+    let raw = String(value).trim().replace(/CRC|USD|[₡$\s]/gi, '');
+    if (!raw) return null;
+
+    const tienePunto = raw.includes('.');
+    const tieneComa = raw.includes(',');
+
+    if (tienePunto && tieneComa) {
+        // El último separador es el decimal
+        if (raw.lastIndexOf(',') > raw.lastIndexOf('.')) {
+            raw = raw.replace(/\./g, '').replace(',', '.');   // 1.234.567,89
+        } else {
+            raw = raw.replace(/,/g, '');                      // 1,234,567.89
+        }
+    } else if (tieneComa) {
+        raw = /^\d{1,3}(,\d{3})+$/.test(raw)
+            ? raw.replace(/,/g, '')                           // 1,234,567
+            : raw.replace(',', '.');                          // 1234,56
+    } else if (tienePunto) {
+        if (/^\d{1,3}(\.\d{3}){2,}$/.test(raw)) {
+            raw = raw.replace(/\./g, '');                     // 1.234.567
+        }                                                     // 1234.56 queda como decimal
+    }
+
     const num = Number(raw);
     return Number.isFinite(num) ? num : null;
 }
@@ -81,6 +119,7 @@ function formatNumber(value, decimals = 2) {
 function parseDate(value) {
     if (!value) return null;
     if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
+    if (typeof value === 'number') return value > 1e11 ? new Date(value) : null;
     const raw = String(value).trim();
     let match = raw.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?:[T\s].*)?$/);
     if (match) {
@@ -100,41 +139,158 @@ function parseDate(value) {
     return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-// 5. Formateador exacto basado en tus columnas de desembolso
+function formatearFecha(value) {
+    if (value === undefined || value === null || String(value).trim() === '') return null;
+    const fecha = parseDate(value);
+    if (!fecha) return String(value).trim();
+    return fecha.toLocaleDateString('es-CR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+// Foto del proyecto: acepta un nombre de archivo (carpeta fotos/), un enlace de
+// Google Drive, un enlace de Dropbox o cualquier URL directa a una imagen
+function urlFoto(valor) {
+    const v = String(valor ?? '').trim();
+    if (!v) return null;
+
+    if (/^https?:\/\//i.test(v)) {
+        const drive = v.match(/drive\.google\.com.*?(?:\/d\/|[?&]id=)([\w-]{10,})/i);
+        if (drive) return 'https://drive.google.com/thumbnail?id=' + drive[1] + '&sz=w1000';
+
+        if (/dropbox\.com/i.test(v)) {
+            const u = v.replace(/([?&])dl=\d/, '$1raw=1');
+            return /raw=1/.test(u) ? u : u + (u.includes('?') ? '&' : '?') + 'raw=1';
+        }
+        return v;
+    }
+    return 'fotos/' + encodeURI(v);
+}
+
+// Admite una o varias fotos separadas por ;
+function htmlFotos(valor) {
+    return String(valor ?? '')
+        .split(';')
+        .map(urlFoto)
+        .filter(Boolean)
+        .map((url) =>
+            `<a href="${url}" target="_blank" rel="noopener">` +
+            `<img class="popup-foto" src="${url}" alt="Foto del proyecto" loading="lazy" ` +
+            `onerror="this.closest('a').style.display='none'"></a>`
+        )
+        .join('');
+}
+
+// 5. Formateador de desembolsos (monto en colones, monto en dólares y fecha)
 function formatearDesembolso(fecha, usd, crc) {
-    const tieneFecha = fecha !== undefined && fecha !== null && String(fecha).trim() !== '';
     const montoUSD = parseNumber(usd);
     const montoCRC = parseNumber(crc);
+    const fechaTxt = formatearFecha(fecha);
 
-    if (!tieneFecha && montoUSD === null && montoCRC === null) {
+    if (montoUSD === null && montoCRC === null && !fechaTxt) {
         return '<span style="color:#94a3b8; font-size:0.8rem;">No asignado</span>';
     }
 
     let html = '';
     if (montoCRC !== null) {
-        html += '<strong style="color:#0f766e; font-size:0.9rem;">₡' + formatNumber(montoCRC, 2) + '</strong><br>';
+        html += `<strong style="color:#0f766e; font-size:0.9rem;">₡${formatNumber(montoCRC, 2)}</strong><br>`;
     }
     if (montoUSD !== null) {
-        html += '<small style="color:#64748b;">($" + formatNumber(montoUSD, 2) + " USD)</small><br>';
+        html += `<small style="color:#64748b;">$${formatNumber(montoUSD, 2)} USD</small><br>`;
     }
-    if (tieneFecha) {
-        html += '<span style="font-size:0.75rem; color:#0f766e; font-weight:600;">Fecha: ' + String(fecha).trim() + '</span>';
+    if (fechaTxt) {
+        html += `<span style="font-size:0.75rem; color:#0f766e; font-weight:600;">Fecha: ${fechaTxt}</span>`;
     }
-    return html || '<span style="color:#94a3b8; font-size:0.8rem;">No asignado</span>';
+    return html;
 }
 
-// Actualizar control de capas en Leaflet de forma limpia
-function actualizarControlCapas() {
-    if (layerControl) {
-        map.removeControl(layerControl);
-    }
-    layerControl = L.control.layers(null, {
-        "Territorios Indígenas": territoriosPorNombre,
-        "Proyectos Visitados": proyectosPorCategoria
-    }, { collapsed: false }).addTo(map);
-}
+// 6. Control de capas agrupado (dos grupos desplegables)
+const controlCapas = L.control({ position: 'topright' });
+controlCapas.grupos = [
+    { id: 'territorios', titulo: 'Territorios Indígenas', items: [] },
+    { id: 'proyectos', titulo: 'Proyectos Visitados', items: [] }
+];
+const checkboxesPorCapa = new Map();
 
-// 6. Cargar Territorios Indígenas
+controlCapas.onAdd = function () {
+    this._contenedor = L.DomUtil.create('div', 'leaflet-control capas-agrupadas');
+    L.DomEvent.disableClickPropagation(this._contenedor);
+    L.DomEvent.disableScrollPropagation(this._contenedor);
+    this.render();
+    return this._contenedor;
+};
+
+controlCapas.agregar = function (idGrupo, item) {
+    this.grupos.find((g) => g.id === idGrupo).items.push(item);
+};
+
+controlCapas.render = function () {
+    if (!this._contenedor) return;
+    const contenedor = this._contenedor;
+    contenedor.innerHTML = '';
+    checkboxesPorCapa.clear();
+
+    this.grupos.forEach((grupo) => {
+        const details = L.DomUtil.create('details', 'capas-grupo', contenedor);
+        details.open = true;
+
+        const summary = L.DomUtil.create('summary', 'capas-grupo-titulo', details);
+        summary.textContent = grupo.titulo;
+
+        const acciones = L.DomUtil.create('div', 'capas-acciones', details);
+        const btnTodos = L.DomUtil.create('button', '', acciones);
+        btnTodos.type = 'button';
+        btnTodos.textContent = 'Mostrar todos';
+        btnTodos.addEventListener('click', () => grupo.items.forEach((i) => map.addLayer(i.capa)));
+
+        const btnNinguno = L.DomUtil.create('button', '', acciones);
+        btnNinguno.type = 'button';
+        btnNinguno.textContent = 'Ocultar todos';
+        btnNinguno.addEventListener('click', () => grupo.items.forEach((i) => map.removeLayer(i.capa)));
+
+        const lista = L.DomUtil.create('div', 'capas-lista', details);
+        if (!grupo.items.length) {
+            const vacio = L.DomUtil.create('span', 'capas-vacio', lista);
+            vacio.textContent = 'Cargando…';
+            return;
+        }
+
+        [...grupo.items]
+            .sort((a, b) => a.etiqueta.localeCompare(b.etiqueta, 'es'))
+            .forEach((item) => {
+                const label = L.DomUtil.create('label', 'capas-item', lista);
+
+                const checkbox = L.DomUtil.create('input', '', label);
+                checkbox.type = 'checkbox';
+                checkbox.checked = map.hasLayer(item.capa);
+                checkbox.addEventListener('change', () => {
+                    if (checkbox.checked) map.addLayer(item.capa);
+                    else map.removeLayer(item.capa);
+                });
+
+                const simbolo = L.DomUtil.create('span', 'capas-simbolo', label);
+                simbolo.innerHTML = item.simboloHTML;
+
+                const texto = L.DomUtil.create('span', 'capas-texto', label);
+                texto.textContent = item.etiqueta;
+
+                if (item.conteo !== undefined) {
+                    const conteo = L.DomUtil.create('span', 'capas-conteo', label);
+                    conteo.textContent = item.conteo;
+                }
+
+                checkboxesPorCapa.set(L.stamp(item.capa), checkbox);
+            });
+    });
+};
+
+controlCapas.addTo(map);
+
+// Mantiene los checkboxes sincronizados si una capa se enciende/apaga desde el buscador
+map.on('layeradd layerremove', (e) => {
+    const checkbox = checkboxesPorCapa.get(L.stamp(e.layer));
+    if (checkbox) checkbox.checked = (e.type === 'layeradd');
+});
+
+// 7. Cargar Territorios Indígenas
 fetch('datos/territorios.geojson')
     .then(res => res.json())
     .then(data => {
@@ -148,11 +304,9 @@ fetch('datos/territorios.geojson')
                 style: estiloNormal,
                 pane: 'paneTerritorios',
                 onEachFeature: (feat, layer) => {
-                    allLayersSearch.push({ type: 'territorio', name: nombreTerritorio, layer });
-
                     layer.on({
                         mouseover: (e) => { e.target.setStyle(estiloHover); e.target.bringToFront(); },
-                        mouseout: (e) => { 
+                        mouseout: (e) => {
                             individualLayer.resetStyle(e.target);
                             if (e.target === selectedTerritoryLayer) e.target.setStyle(estiloSeleccionado);
                         },
@@ -173,9 +327,19 @@ fetch('datos/territorios.geojson')
                             document.getElementById('info-decreto').textContent = props.DECRETO ? 'Decreto ' + props.DECRETO + (props.AÑO ? ' (' + props.AÑO + ')' : '') : 'No especificado';
                             document.getElementById('info-bloque').textContent = props.BLOQUE || 'N/D';
 
-                            // Enlace exacto con columnas de desembolso
-                            document.getElementById('info-des1').innerHTML = formatearDesembolso(props['fec_desemb_1'], props['monto_desemb_1_usd'], props['monto_desemb_1_crc']);
-                            document.getElementById('info-des2').innerHTML = formatearDesembolso(props['fec_desemb_2'], props['monto_desemb_2_usd'], props['monto_desemb_2_crc']);
+                            // Desembolsos: montos en USD y CRC + fechas
+                            // (si algo no aparece, revisa en la consola los nombres reales de las columnas)
+                            console.debug('Propiedades del territorio:', props);
+                            document.getElementById('info-des1').innerHTML = formatearDesembolso(
+                                getProp(props, 'fec_desemb_1'),
+                                getProp(props, 'monto_desemb_1_usd'),
+                                getProp(props, 'monto_desemb_1_crc')
+                            );
+                            document.getElementById('info-des2').innerHTML = formatearDesembolso(
+                                getProp(props, 'fec_desemb_2'),
+                                getProp(props, 'monto_desemb_2_usd'),
+                                getProp(props, 'monto_desemb_2_crc')
+                            );
 
                             [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024].forEach((year) => {
                                 const val = props['AE_' + year];
@@ -192,11 +356,19 @@ fetch('datos/territorios.geojson')
                 }
             });
 
-            territoriosPorNombre[nombreTerritorio] = individualLayer;
+            individualLayer.eachLayer((layer) => {
+                allLayersSearch.push({ type: 'territorio', name: nombreTerritorio, layer, grupo: individualLayer });
+            });
+
             individualLayer.addTo(map);
+            controlCapas.agregar('territorios', {
+                etiqueta: nombreTerritorio,
+                capa: individualLayer,
+                simboloHTML: '<span class="swatch-territorio"></span>'
+            });
         });
 
-        actualizarControlCapas();
+        controlCapas.render();
         document.getElementById('data-status').textContent = 'Datos cargados correctamente';
     })
     .catch(err => {
@@ -204,7 +376,7 @@ fetch('datos/territorios.geojson')
         document.getElementById('data-status').textContent = 'Error al cargar territorios.geojson';
     });
 
-// 7. Gráfico de visitas ordenado cronológicamente por mes (desde 2025 en adelante)
+// 8. Gráfico de visitas ordenado cronológicamente por mes (desde 2025 en adelante)
 function construirGraficoVisitas(features) {
     const conteoMeses = new Map();
 
@@ -279,7 +451,39 @@ function construirGraficoVisitas(features) {
     });
 }
 
-// 8. Cargar Puntos de Proyectos
+// 9. Iconos de proyectos: punto simple (zoom lejano) o símbolo de categoría (zoom cercano)
+function crearIcono(config, usarSimbolo) {
+    if (usarSimbolo) {
+        return L.divIcon({
+            className: 'marcador-wrap',
+            html: `<div class="marcador-simbolo" style="background:${config.color}">${config.simbolo}</div>`,
+            iconSize: [34, 34],
+            iconAnchor: [17, 17],
+            popupAnchor: [0, -18]
+        });
+    }
+    return L.divIcon({
+        className: 'marcador-wrap',
+        html: `<div class="marcador-punto" style="background:${config.color}"></div>`,
+        iconSize: [16, 16],
+        iconAnchor: [8, 8],
+        popupAnchor: [0, -8]
+    });
+}
+
+const marcadoresProyectos = [];
+let modoSimbolos = null;
+
+function actualizarIconosProyectos() {
+    const usarSimbolos = map.getZoom() >= ZOOM_SIMBOLOS;
+    if (usarSimbolos === modoSimbolos) return;
+    modoSimbolos = usarSimbolos;
+    marcadoresProyectos.forEach(({ marker, config }) => marker.setIcon(crearIcono(config, usarSimbolos)));
+}
+
+map.on('zoomend', actualizarIconosProyectos);
+
+// 10. Cargar Puntos de Proyectos
 fetch('datos/puntos.geojson')
     .then(res => res.json())
     .then(data => {
@@ -288,34 +492,30 @@ fetch('datos/puntos.geojson')
         // Construir gráfico optimizado por mes (2025 en adelante)
         construirGraficoVisitas(data.features);
 
-        // Agrupar proyectos por categoría
+        // Agrupar proyectos por categoría (sin distinguir mayúsculas ni tildes)
         const categoriasMap = {};
         data.features.forEach(feature => {
             const props = feature.properties || {};
-            const catName = props.Clasificacion ? String(props.Clasificacion).trim() : 'General';
-            if (!categoriasMap[catName]) {
-                categoriasMap[catName] = [];
+            const nombre = props.Clasificacion ? String(props.Clasificacion).trim() : 'General';
+            const clave = normalizeText(nombre) || 'general';
+            if (!categoriasMap[clave]) {
+                categoriasMap[clave] = { nombre, features: [] };
             }
-            categoriasMap[catName].push(feature);
+            categoriasMap[clave].features.push(feature);
         });
 
-        Object.keys(categoriasMap).forEach(catName => {
-            const featuresCat = categoriasMap[catName];
+        Object.values(categoriasMap).forEach(({ nombre: catName, features: featuresCat }) => {
+            const config = getCategoriaConfig(catName);
 
             const layerCat = L.geoJSON({ type: "FeatureCollection", features: featuresCat }, {
                 pointToLayer: (feature, latlng) => {
-                    const props = feature.properties || {};
-                    const catKey = (props.Clasificacion || '').trim().toLowerCase();
-                    const color = coloresCategorias[catKey] || '#0f766e';
-
-                    return L.circleMarker(latlng, {
-                        radius: 8,
-                        fillColor: color,
-                        color: '#ffffff',
-                        weight: 2,
-                        fillOpacity: 0.95,
-                        pane: 'panePuntos'
+                    const marker = L.marker(latlng, {
+                        icon: crearIcono(config, false),
+                        pane: 'panePuntos',
+                        riseOnHover: true
                     });
+                    marcadoresProyectos.push({ marker, config });
+                    return marker;
                 },
                 onEachFeature: (feature, layer) => {
                     const props = feature.properties || {};
@@ -329,10 +529,9 @@ fetch('datos/puntos.geojson')
                     const fecha = props['11_Fecha_de_visita'] || 'N/D';
                     const desembolso = props['8_Desembolso_CREF'] || 'N/D';
 
-                    allLayersSearch.push({ type: 'punto', name: nombreProj, layer });
-
                     layer.bindPopup(
                         '<div class="popup-proyecto">' +
+                            htmlFotos(getProp(props, 'foto', 'fotografia', 'imagen')) +
                             '<h3>' + nombreProj + '</h3>' +
                             '<p><strong>Territorio:</strong> ' + territorio + '</p>' +
                             '<p><strong>Comunidad:</strong> ' + comunidad + '</p>' +
@@ -347,23 +546,38 @@ fetch('datos/puntos.geojson')
                 }
             });
 
-            proyectosPorCategoria[catName] = layerCat;
+            layerCat.eachLayer((layer) => {
+                const nombreProj = (layer.feature.properties || {})['3_Nombre_de_Proyecto'] || 'Proyecto sin nombre';
+                allLayersSearch.push({ type: 'punto', name: nombreProj, layer, grupo: layerCat });
+            });
+
             layerCat.addTo(map);
+            controlCapas.agregar('proyectos', {
+                etiqueta: catName,
+                capa: layerCat,
+                conteo: featuresCat.length,
+                simboloHTML: `<span class="marcador-simbolo mini" style="background:${config.color}">${config.simbolo}</span>`
+            });
         });
 
-        actualizarControlCapas();
+        modoSimbolos = null;
+        actualizarIconosProyectos();
+        controlCapas.render();
     })
     .catch(err => {
         console.error(err);
     });
 
-// 9. Buscador rápido
+// 11. Buscador rápido
 document.getElementById('buscador').addEventListener('input', (e) => {
     const query = e.target.value.toLowerCase().trim();
     if (query.length < 2) return;
 
     const match = allLayersSearch.find(item => item.name && item.name.toLowerCase().includes(query));
     if (match) {
+        // Si la capa estaba apagada en el control, se enciende para poder mostrarla
+        if (match.grupo && !map.hasLayer(match.grupo)) map.addLayer(match.grupo);
+
         if (match.type === 'territorio') {
             map.flyToBounds(match.layer.getBounds(), { padding: [50, 50], duration: 1.2 });
             match.layer.fire('click');
