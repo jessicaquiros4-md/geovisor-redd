@@ -36,13 +36,11 @@
  
     <div class="search-container">
 <label class="visually-hidden" for="buscador">Buscar territorio o proyecto</label>
-<input type="search" id="buscador"
-               placeholder="🔍 Buscar territorio o proyecto..."
-               autocomplete="off">
+<input type="search" id="buscador" placeholder="🔍 Buscar territorio o proyecto..." autocomplete="off">
 <span id="search-feedback" aria-live="polite"></span>
 </div>
  
-    <!-- Panel izquierdo: ficha y gráfico mensual debajo -->
+    <!-- Panel izquierdo: ficha y gráfico mensual -->
 <div class="left-column">
 <aside class="sidebar" aria-label="Información del territorio seleccionado">
 <div class="header-territorio">
@@ -123,7 +121,7 @@
 </section>
 </div>
  
-    <!-- Filtros del lado derecho -->
+    <!-- Selector de mapa base -->
 <div class="right-controls">
 <div class="basemap-selector">
 <label class="visually-hidden" for="select-basemap">Mapa base</label>
@@ -135,13 +133,12 @@
 </div>
 </div>
  
-    <div id="data-status" class="data-status"
-         role="status" aria-live="polite">
+    <div id="data-status" class="data-status" role="status" aria-live="polite">
         Cargando datos geográficos...
 </div>
 </main>
  
-<!-- Leaflet se carga antes de su complemento y del script propio -->
+<!-- JavaScript: Leaflet antes de MarkerCluster y script.js -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="script.js"></script>
