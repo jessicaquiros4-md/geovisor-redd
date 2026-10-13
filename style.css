@@ -483,7 +483,7 @@ body {
 
 
 
-/* Ajustes de presentaciÃ³n: panel compacto y colores visibles en la leyenda */
+/* Ajustes de presentación: panel compacto y colores visibles en la leyenda */
 * { box-sizing: border-box; }
 .sidebar {
     width: 320px;
@@ -527,3 +527,9 @@ body {
     .chart-container { height: 90px; }
     .basemap-selector { bottom: 12px; right: 10px; }
 }
+
+
+/* Estado de carga y errores visibles */
+.data-status { max-width: min(520px, calc(100vw - 24px)); }
+.data-status.error { background: #fff1f2; color: #9f1239; border: 1px solid #fecdd3; }
+.swatch-territorio { display:inline-block; width:14px; height:14px; border:1px solid #64748b; border-radius:3px; vertical-align:middle; }
