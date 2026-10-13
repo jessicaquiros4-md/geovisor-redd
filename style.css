@@ -151,14 +151,26 @@ body {
 .desembolsos-flex {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.desembolso-item {
+    flex: 1;
+    min-width: 0;
+}
+
+.desembolso-item small {
+    display: block;
+    color: #64748b;
+    margin-bottom: 2px;
 }
 
 .divider-v {
     width: 1px;
     background: #cbd5e1;
-    height: 35px;
-    margin: 0 10px;
+    align-self: stretch;
+    margin: 0 4px;
 }
 
 .tabla-anios {
@@ -215,4 +227,152 @@ body {
 
 .data-status-visible {
     display: block;
+}
+
+/* ============================================================
+   Control de capas agrupado
+   ============================================================ */
+
+/* Baja el control de capas para que no tape los indicadores ni el buscador */
+.leaflet-top.leaflet-right {
+    margin-top: 135px;
+    margin-right: 10px;
+}
+
+.capas-agrupadas {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+    padding: 6px 12px 10px;
+    width: 270px;
+    max-height: calc(100vh - 290px);
+    overflow-y: auto;
+    font-size: 0.85rem;
+}
+
+.capas-grupo + .capas-grupo {
+    border-top: 1px solid #e2e8f0;
+    margin-top: 6px;
+    padding-top: 4px;
+}
+
+.capas-grupo-titulo {
+    cursor: pointer;
+    font-weight: 700;
+    color: #0f766e;
+    padding: 6px 0;
+}
+
+.capas-acciones {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 4px;
+}
+
+.capas-acciones button {
+    background: none;
+    border: none;
+    padding: 0;
+    color: #64748b;
+    font-size: 0.75rem;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.capas-acciones button:hover {
+    color: #0f766e;
+}
+
+.capas-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 3px 0;
+    cursor: pointer;
+}
+
+.capas-item input {
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.capas-simbolo {
+    display: inline-flex;
+    flex-shrink: 0;
+}
+
+.capas-texto {
+    flex: 1;
+    line-height: 1.25;
+    text-transform: capitalize;
+}
+
+.capas-conteo {
+    color: #64748b;
+    font-size: 0.75rem;
+}
+
+.capas-vacio {
+    color: #94a3b8;
+    font-size: 0.8rem;
+}
+
+.swatch-territorio {
+    width: 18px;
+    height: 12px;
+    border: 2px solid #0f766e;
+    background: rgba(20, 184, 166, 0.35);
+    border-radius: 3px;
+    box-sizing: border-box;
+}
+
+/* ============================================================
+   Marcadores de proyectos
+   ============================================================ */
+
+.marcador-wrap {
+    background: none;
+    border: none;
+}
+
+.marcador-punto {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+    box-sizing: border-box;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+
+.marcador-simbolo {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+    box-sizing: border-box;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    line-height: 1;
+}
+
+.marcador-simbolo.mini {
+    width: 22px;
+    height: 22px;
+    font-size: 12px;
+    border-width: 1px;
+    box-shadow: none;
+}
+
+/* Foto del proyecto dentro del popup */
+.popup-foto {
+    display: block;
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    background: #e2e8f0;
 }
