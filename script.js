@@ -2,15 +2,11 @@
  
 /* ============================================================
    GEOVISOR REDD+ — script.js
-   Rutas esperadas:
-   datos/territorios.geojson
-   datos/puntos.geojson
+   Mantiene las columnas de la base de datos compartidas.
+   Rutas esperadas: datos/territorios.geojson y datos/puntos.geojson
    ============================================================ */
  
-const map = L.map('map', {
-    zoomControl: false,
-    preferCanvas: false
-}).setView([9.25, -83.25], 9);
+const map = L.map('map', { zoomControl: false, preferCanvas: false }).setView([9.25, -83.25], 9);
  
 L.control.zoom({ position: 'bottomright' }).addTo(map);
  
@@ -20,31 +16,19 @@ map.getPane('paneTerritorios').style.zIndex = 400;
 map.createPane('panePuntos');
 map.getPane('panePuntos').style.zIndex = 650;
  
-// Mapas base
 const basemaps = {
-    osm: L.tileLayer(
-        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        {
-            maxZoom: 19,
-            attribution: '&copy; OpenStreetMap contributors'
-        }
-    ),
- 
-    carto: L.tileLayer(
-        'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-        {
-            maxZoom: 20,
-            attribution: '&copy; CARTO'
-        }
-    ),
- 
-    esri: L.tileLayer(
-        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        {
-            maxZoom: 19,
-            attribution: '&copy; Esri'
-        }
-    )
+    osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+    }),
+    carto: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 20,
+        attribution: '&copy; CARTO'
+    }),
+    esri: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        attribution: '&copy; Esri'
+    })
 };
  
 basemaps.osm.addTo(map);
@@ -55,9 +39,7 @@ document.getElementById('select-basemap').addEventListener('change', (event) => 
     if (!selected) return;
  
     Object.values(basemaps).forEach((layer) => {
-        if (map.hasLayer(layer)) {
-            map.removeLayer(layer);
-        }
+        if (map.hasLayer(layer)) map.removeLayer(layer);
     });
  
     selected.addTo(map);
@@ -115,7 +97,6 @@ const categoriaPorDefecto = {
     simbolo: '📍'
 };
  
-// Normalización de textos
 function normalizeText(value) {
     return String(value ?? '')
         .normalize('NFD')
@@ -162,7 +143,6 @@ function isPresent(value) {
         String(value).trim() !== '';
 }
  
-// Conversión de números, incluidos formatos con separadores de miles
 function parseNumber(value) {
     if (typeof value === 'number') {
         return Number.isFinite(value) ? value : null;
@@ -189,15 +169,9 @@ function parseNumber(value) {
         raw = /^-?\d{1,3}(,\d{3})+$/.test(raw)
             ? raw.replace(/,/g, '')
             : raw.replace(',', '.');
-    } else if (
-        hasDot &&
-        /^-?\d{1,3}(\.\d{3}){2,}$/.test(raw)
-    ) {
+    } else if (hasDot && /^-?\d{1,3}(\.\d{3}){2,}$/.test(raw)) {
         raw = raw.replace(/\./g, '');
-    } else if (
-        hasDot &&
-        /^-?\d{1,3}\.\d{3}$/.test(raw)
-    ) {
+    } else if (hasDot && /^-?\d{1,3}\.\d{3}$/.test(raw)) {
         raw = raw.replace('.', '');
     }
  
@@ -209,21 +183,17 @@ function parseNumber(value) {
 function formatNumber(value, decimals = 2) {
     const number = parseNumber(value);
  
-    if (number === null) return null;
- 
-    return new Intl.NumberFormat('es-CR', {
-        maximumFractionDigits: decimals
-    }).format(number);
+    return number === null
+        ? null
+        : new Intl.NumberFormat('es-CR', {
+            maximumFractionDigits: decimals
+        }).format(number);
 }
  
-// Admite fechas ISO y fechas en formato DD/MM/AAAA
 function parseDate(value) {
     if (!isPresent(value)) return null;
  
-    if (
-        value instanceof Date &&
-        !Number.isNaN(value.getTime())
-    ) {
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
         return value;
     }
  
@@ -234,41 +204,35 @@ function parseDate(value) {
     );
  
     if (match) {
-        const year = Number(match[1]);
-        const month = Number(match[2]);
-        const day = Number(match[3]);
-        const date = new Date(year, month - 1, day);
+        const date = new Date(
+            Number(match[1]),
+            Number(match[2]) - 1,
+            Number(match[3])
+        );
  
-        if (
-            date.getFullYear() === year &&
-            date.getMonth() === month - 1 &&
-            date.getDate() === day
-        ) {
-            return date;
-        }
- 
-        return null;
+        return date.getFullYear() === Number(match[1]) &&
+            date.getMonth() === Number(match[2]) - 1 &&
+            date.getDate() === Number(match[3])
+            ? date
+            : null;
     }
  
     match = raw.match(
-        /^(\d{1,2})[/.\\-](\d{1,2})[/.\\-](\d{4})(?:[T\s].*)?$/
+        /^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})(?:[T\s].*)?$/
     );
  
     if (match) {
-        const day = Number(match[1]);
-        const month = Number(match[2]);
-        const year = Number(match[3]);
-        const date = new Date(year, month - 1, day);
+        const date = new Date(
+            Number(match[3]),
+            Number(match[2]) - 1,
+            Number(match[1])
+        );
  
-        if (
-            date.getFullYear() === year &&
-            date.getMonth() === month - 1 &&
-            date.getDate() === day
-        ) {
-            return date;
-        }
- 
-        return null;
+        return date.getFullYear() === Number(match[3]) &&
+            date.getMonth() === Number(match[2]) - 1 &&
+            date.getDate() === Number(match[1])
+            ? date
+            : null;
     }
  
     const parsed = new Date(raw);
@@ -298,9 +262,10 @@ function setStatus(message, isError = false) {
     element.classList.add('data-status-visible');
  
     if (!isError) {
-        window.setTimeout(() => {
-            element.classList.remove('data-status-visible');
-        }, 4500);
+        window.setTimeout(
+            () => element.classList.remove('data-status-visible'),
+            4500
+        );
     }
 }
  
@@ -322,17 +287,16 @@ async function fetchGeoJSON(path) {
     return data;
 }
  
-/* ============================================================
-   1. COLORES PASTEL PARA LOS TERRITORIOS
-   ============================================================ */
- 
+// Cada territorio recibe un color pastel propio.
 function territoryColor(index) {
     const hue = (index * 137.508 + 18) % 360;
+ 
     return `hsl(${hue.toFixed(1)}, 58%, 79%)`;
 }
  
 function territoryBorderColor(index) {
     const hue = (index * 137.508 + 18) % 360;
+ 
     return `hsl(${hue.toFixed(1)}, 42%, 38%)`;
 }
  
@@ -362,8 +326,10 @@ function showTerritoryInfo(item, zoomTo = true) {
     selectedTerritoryLayer = item;
  
     setTerritoryStyle(item.layer, {
-        ...estiloSeleccionado,
-        fillColor: item.fill
+        color: '#0f766e',
+        weight: 3.5,
+        fillColor: item.fill,
+        fillOpacity: 0.82
     });
  
     if (zoomTo) {
@@ -408,37 +374,66 @@ function showTerritoryInfo(item, zoomTo = true) {
     document.getElementById('info-bloque').textContent =
         isPresent(props.BLOQUE) ? props.BLOQUE : 'N/D';
  
-    // Primer desembolso: fecha, monto USD y monto CRC.
-    document.getElementById('info-des1').innerHTML =
-        formatDisbursement(
-            getProp(props, 'fec_desemb_1'),
-            getProp(props, 'monto_desemb_1_usd'),
-            getProp(props, 'monto_desemb_1_crc')
-        );
+    // Primer desembolso: campos exactos del GeoJSON.
+    document.getElementById('info-des1').innerHTML = formatDisbursement(
+        getProp(props, 'fec_desemb_1'),
+        getProp(props, 'monto_desemb_1_usd'),
+        getProp(props, 'monto_desemb_1_crc')
+    );
  
-    // Segundo desembolso: fecha, monto USD y monto CRC.
-    document.getElementById('info-des2').innerHTML =
-        formatDisbursement(
-            getProp(props, 'fec_desemb_2'),
-            getProp(props, 'monto_desemb_2_usd'),
-            getProp(props, 'monto_desemb_2_crc')
-        );
+    // Segundo desembolso: campos exactos del GeoJSON.
+    document.getElementById('info-des2').innerHTML = formatDisbursement(
+        getProp(props, 'fec_desemb_2'),
+        getProp(props, 'monto_desemb_2_usd'),
+        getProp(props, 'monto_desemb_2_crc')
+    );
  
-    [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024]
-        .forEach((year) => {
-            const value = getProp(props, `AE_${year}`);
+    [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024].forEach((year) => {
+        const value = getProp(props, `AE_${year}`);
  
-            document.getElementById(`ae-${year}`).textContent =
-                isPresent(value) ? value : '—';
-        });
+        document.getElementById(`ae-${year}`).textContent =
+            isPresent(value) ? value : '—';
+    });
+}
+ 
+// Muestra únicamente el año del desembolso.
+function formatDisbursementYear(value) {
+    if (!isPresent(value)) return null;
+ 
+    // Los campos de este GeoJSON contienen el año como número.
+    if (
+        typeof value === 'number' &&
+        Number.isInteger(value) &&
+        value >= 1900 &&
+        value <= 2200
+    ) {
+        return String(value);
+    }
+ 
+    const raw = String(value).trim();
+ 
+    if (/^(19|20|21|22)\d{2}$/.test(raw)) {
+        return raw;
+    }
+ 
+    // Si llega una fecha completa, extraer solo el año.
+    const yearMatch = raw.match(/(?:19|20|21|22)\d{2}/);
+ 
+    if (yearMatch) {
+        return yearMatch[0];
+    }
+ 
+    const parsed = parseDate(value);
+ 
+    return parsed ? String(parsed.getFullYear()) : null;
 }
  
 function formatDisbursement(dateValue, usdValue, crcValue) {
     const usd = parseNumber(usdValue);
     const crc = parseNumber(crcValue);
-    const dateText = formatDate(dateValue);
+    const yearText = formatDisbursementYear(dateValue);
  
-    if (usd === null && crc === null && !dateText) {
+    if (usd === null && crc === null && !yearText) {
         return '<span class="desembolso-vacio">No asignado</span>';
     }
  
@@ -452,22 +447,27 @@ function formatDisbursement(dateValue, usdValue, crcValue) {
         html += `<small class="monto-usd">$${escapeHTML(formatNumber(usd, 2))} USD</small><br>`;
     }
  
-    if (dateText) {
-        html += `<span class="fecha-desembolso">${escapeHTML(dateText)}</span>`;
+    if (yearText) {
+        html += `<span class="fecha-desembolso">Año: ${escapeHTML(yearText)}</span>`;
     }
  
     return html;
 }
  
-/* ============================================================
-   2. CONTROL DE CAPAS Y SIMBOLOGÍA
-   ============================================================ */
- 
+// Control propio con dos grupos y leyenda por territorio/categoría.
 const layerControl = L.control({ position: 'topright' });
  
 layerControl.groups = [
-    { id: 'territorios', title: 'Territorios indígenas', items: [] },
-    { id: 'proyectos', title: 'Proyectos visitados', items: [] }
+    {
+        id: 'territorios',
+        title: 'Territorios Indígenas',
+        items: []
+    },
+    {
+        id: 'proyectos',
+        title: 'Proyectos Visitados',
+        items: []
+    }
 ];
  
 const checkboxByLayerId = new Map();
@@ -491,7 +491,9 @@ layerControl.addItem = function (groupId, item) {
         (entry) => entry.id === groupId
     );
  
-    if (group) group.items.push(item);
+    if (group) {
+        group.items.push(item);
+    }
 };
  
 layerControl.render = function () {
@@ -523,7 +525,9 @@ layerControl.render = function () {
             details
         );
  
+        // Activar todas las capas del grupo.
         const showAll = L.DomUtil.create('button', '', actions);
+ 
         showAll.type = 'button';
         showAll.textContent = 'Activar todos';
  
@@ -535,7 +539,9 @@ layerControl.render = function () {
             });
         });
  
+        // Desactivar todas las capas del grupo.
         const hideAll = L.DomUtil.create('button', '', actions);
+ 
         hideAll.type = 'button';
         hideAll.textContent = 'Desactivar todos';
  
@@ -547,15 +553,21 @@ layerControl.render = function () {
             });
         });
  
-        const list = L.DomUtil.create('div', 'capas-lista', details);
+        const list = L.DomUtil.create(
+            'div',
+            'capas-lista',
+            details
+        );
  
         if (!group.items.length) {
             L.DomUtil.create('div', 'capas-vacio', list)
                 .textContent = 'No hay capas cargadas.';
+ 
             return;
         }
  
-        group.items.slice()
+        group.items
+            .slice()
             .sort((a, b) => a.label.localeCompare(b.label, 'es'))
             .forEach((item) => {
                 const label = L.DomUtil.create(
@@ -564,7 +576,12 @@ layerControl.render = function () {
                     list
                 );
  
-                const checkbox = L.DomUtil.create('', '', label);
+                const checkbox = L.DomUtil.create(
+                    'input',
+                    '',
+                    label
+                );
+ 
                 checkbox.type = 'checkbox';
                 checkbox.checked = map.hasLayer(item.layer);
  
@@ -602,7 +619,10 @@ layerControl.render = function () {
                     count.textContent = String(item.count);
                 }
  
-                checkboxByLayerId.set(L.stamp(item.layer), checkbox);
+                checkboxByLayerId.set(
+                    L.stamp(item.layer),
+                    checkbox
+                );
             });
     });
 };
@@ -610,17 +630,16 @@ layerControl.render = function () {
 layerControl.addTo(map);
  
 map.on('layeradd layerremove', (event) => {
-    const checkbox = checkboxByLayerId.get(L.stamp(event.layer));
+    const checkbox = checkboxByLayerId.get(
+        L.stamp(event.layer)
+    );
  
     if (checkbox) {
         checkbox.checked = event.type === 'layeradd';
     }
 });
  
-/* ============================================================
-   3. CARGA DE TERRITORIOS INDÍGENAS
-   ============================================================ */
- 
+// 1. Territorios: una capa individual por territorio.
 async function loadTerritories() {
     const data = await fetchGeoJSON('datos/territorios.geojson');
     const features = data.features || [];
@@ -630,6 +649,7 @@ async function loadTerritories() {
  
     features.forEach((feature, index) => {
         const props = feature.properties || {};
+ 
         const name = String(
             props.TERRITORIO || `Territorio ${index + 1}`
         );
@@ -647,8 +667,6 @@ async function loadTerritories() {
             }
         });
  
-        const item = { name, feature, layer, fill, border };
- 
         layer.eachLayer((polygon) => {
             polygon.on({
                 mouseover: (event) => {
@@ -664,8 +682,7 @@ async function loadTerritories() {
                         event.target.setStyle({
                             color: '#0f766e',
                             weight: 3.5,
-                            fillColor: fill,
-                            fillOpacity: 0.8
+                            fillOpacity: 0.82
                         });
                     } else {
                         event.target.setStyle({
@@ -681,7 +698,16 @@ async function loadTerritories() {
             });
         });
  
+        const item = {
+            name,
+            feature,
+            layer,
+            fill,
+            border
+        };
+ 
         layer.addTo(map);
+ 
         territoryItems.push(item);
  
         allLayersSearch.push({
@@ -691,32 +717,27 @@ async function loadTerritories() {
             layer
         });
  
-        // El color de la leyenda coincide con el color del polígono.
         layerControl.addItem('territorios', {
             label: name,
             layer,
-            swatchHTML:
-                `<span class="swatch-territorio" style="background:${fill};border-color:${border}"></span>`
+            swatchHTML: `<span class="swatch-territorio" style="background:${fill};border-color:${border}"></span>`
         });
     });
  
     layerControl.render();
  
     if (features.length) {
-        const allTerritories = L.featureGroup(
-            territoryItems.map((item) => item.layer)
+        map.fitBounds(
+            L.featureGroup(
+                territoryItems.map((item) => item.layer)
+            ).getBounds(),
+            {
+                padding: [25, 25],
+                maxZoom: 10
+            }
         );
- 
-        map.fitBounds(allTerritories.getBounds(), {
-            padding: [25, 25],
-            maxZoom: 10
-        });
     }
 }
- 
-/* ============================================================
-   4. PROYECTOS: COLORES, ICONOS Y AGRUPAMIENTO
-   ============================================================ */
  
 function getCategoryConfig(name) {
     return categoriasConfig[normalizeText(name)] ||
@@ -755,12 +776,7 @@ function refreshProjectIcons() {
  
 map.on('zoomend', refreshProjectIcons);
  
-/* ============================================================
-   5. ENLACES A FOTOGRAFÍAS
-   ============================================================ */
- 
-// Si la celda ya contiene un enlace web, lo conservamos.
-// Las carpetas de Drive/Dropbox se abren con su dirección original.
+// Enlaces de fotografías: se conserva la ruta registrada.
 function makePhotoLinks(value) {
     if (!isPresent(value)) {
         return '<span class="foto-no-disponible">Fotografía no disponible</span>';
@@ -776,7 +792,7 @@ function makePhotoLinks(value) {
  
         if (!/^https?:\/\//i.test(url)) {
             if (/^(\.\.\/|\.\/|fotos\/)/i.test(url)) {
-                // La ruta ya contiene una carpeta.
+                // La ruta relativa ya incluye su carpeta.
             } else if (/\.(jpe?g|png|gif|webp|pdf)$/i.test(url)) {
                 url = `fotos/${encodeURI(url)}`;
             } else {
@@ -785,20 +801,15 @@ function makePhotoLinks(value) {
         }
  
         const safeURL = escapeHTML(url);
-        const isImage = /\.(jpe?g|png|gif|webp)(?:[?#].*)?$/i.test(url);
+ 
+        const isImage =
+            /\.(jpe?g|png|gif|webp)(?:[?#].*)?$/i.test(url);
  
         const preview = isImage
             ? `<img class="popup-foto" src="${safeURL}" alt="Fotografía del proyecto" loading="lazy" onerror="this.style.display='none'">`
             : '';
  
-        return `
-<a class="foto-link"
-               href="${safeURL}"
-               target="_blank"
-               rel="noopener noreferrer">
-                ${preview}
-<span>📷 Abrir fotografía o carpeta</span>
-</a>`;
+        return `<a class="foto-link" href="${safeURL}" target="_blank" rel="noopener noreferrer">${preview}<span>📷 Abrir fotografía o carpeta</span></a>`;
     }).join('');
 }
  
@@ -835,10 +846,15 @@ function projectPopup(props, categoryName) {
  
     const investment = investmentNumber !== null
         ? `₡${formatNumber(investmentNumber, 2)} (aprox. $${formatNumber(investmentNumber / 520, 2)} USD)`
-        : (isPresent(investmentRaw) ? String(investmentRaw) : 'N/D');
+        : (
+            isPresent(investmentRaw)
+                ? String(investmentRaw)
+                : 'N/D'
+        );
  
     const visitDate =
-        formatDate(getProp(props, '11_Fecha_de_visita')) || 'N/D';
+        formatDate(getProp(props, '11_Fecha_de_visita')) ||
+        'N/D';
  
     const disbursement =
         getProp(props, '8_Desembolso_CREF') || 'N/D';
@@ -855,8 +871,7 @@ function projectPopup(props, categoryName) {
         'url_fotografia'
     );
  
-    return `
-<div class="popup-proyecto">
+    return `<div class="popup-proyecto">
 <h3>${escapeHTML(name)}</h3>
 <p><strong>Territorio:</strong> ${escapeHTML(territory)}</p>
 <p><strong>Comunidad:</strong> ${escapeHTML(community)}</p>
@@ -868,10 +883,6 @@ function projectPopup(props, categoryName) {
 <div class="popup-fotos">${makePhotoLinks(photoValue)}</div>
 </div>`;
 }
- 
-/* ============================================================
-   6. CARGA DE PROYECTOS Y CATEGORÍAS
-   ============================================================ */
  
 async function loadProjects() {
     const data = await fetchGeoJSON('datos/puntos.geojson');
@@ -898,21 +909,17 @@ async function loadProjects() {
             category = {
                 label: categoryName,
                 config,
-                count: 0,
                 layer: L.markerClusterGroup({
                     maxClusterRadius: 42,
                     showCoverageOnHover: false,
                     spiderfyOnMaxZoom: true,
                     zoomToBoundsOnClick: true,
  
-                    iconCreateFunction: (cluster) => {
-                        return L.divIcon({
-                            html:
-                                `<div class="custom-cluster" style="--cluster-color:${config.color}"><span>${cluster.getChildCount()}</span></div>`,
-                            className: 'custom-cluster-wrapper',
-                            iconSize: [40, 40]
-                        });
-                    }
+                    iconCreateFunction: (cluster) => L.divIcon({
+                        html: `<div class="custom-cluster" style="--cluster-color:${config.color}"><span>${cluster.getChildCount()}</span></div>`,
+                        className: 'custom-cluster-wrapper',
+                        iconSize: [40, 40]
+                    })
                 })
             };
  
@@ -923,12 +930,11 @@ async function loadProjects() {
                 label: categoryName,
                 layer: category.layer,
                 count: 0,
-                swatchHTML:
-                    `<span class="project-legend-dot" style="background:${config.color}">${config.simbolo}</span>`
+                swatchHTML: `<span class="project-legend-dot" style="background:${config.color}">${config.simbolo}</span>`
             });
         }
  
-        category.count += 1;
+        category.count = (category.count || 0) + 1;
  
         const geometry = feature.geometry;
  
@@ -942,6 +948,7 @@ async function loadProjects() {
                 `Proyecto ${index + 1} omitido: geometría Point inválida.`,
                 feature
             );
+ 
             return;
         }
  
@@ -971,7 +978,11 @@ async function loadProjects() {
         );
  
         category.layer.addLayer(marker);
-        projectMarkers.push({ marker, config });
+ 
+        projectMarkers.push({
+            marker,
+            config
+        });
  
         const projectName = String(
             getProp(props, '3_Nombre_de_Proyecto') ||
@@ -995,16 +1006,18 @@ async function loadProjects() {
         });
     });
  
+    // Actualiza la cuenta por categoría después de cargar los puntos.
     const projectGroup = layerControl.groups.find(
         (group) => group.id === 'proyectos'
     );
  
     projectGroup.items.forEach((item) => {
-        const category = Array.from(projectCategories.values())
-            .find((entry) => entry.layer === item.layer);
+        const category = Array.from(
+            projectCategories.values()
+        ).find((entry) => entry.layer === item.layer);
  
         if (category) {
-            item.count = category.count;
+            item.count = category.count || 0;
         }
     });
  
@@ -1012,16 +1025,12 @@ async function loadProjects() {
     refreshProjectIcons();
 }
  
-/* ============================================================
-   7. GRÁFICO DE VISITAS POR MES
-   Conserva el período de 2025 en adelante de tu código.
-   ============================================================ */
- 
 function buildMonthlyChart(features) {
     const monthlyCounts = new Map();
  
     features.forEach((feature) => {
         const props = feature.properties || {};
+ 
         const date = parseDate(
             getProp(props, '11_Fecha_de_visita')
         );
@@ -1088,8 +1097,12 @@ function buildMonthlyChart(features) {
             maintainAspectRatio: false,
  
             plugins: {
-                legend: { display: false },
-                tooltip: { intersect: false }
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    intersect: false
+                }
             },
  
             scales: {
@@ -1098,7 +1111,9 @@ function buildMonthlyChart(features) {
                     ticks: {
                         stepSize: 1,
                         precision: 0,
-                        font: { size: 10 }
+                        font: {
+                            size: 10
+                        }
                     }
                 },
  
@@ -1108,7 +1123,9 @@ function buildMonthlyChart(features) {
                         maxTicksLimit: 9,
                         maxRotation: 45,
                         minRotation: 0,
-                        font: { size: 9 }
+                        font: {
+                            size: 9
+                        }
                     }
                 }
             }
@@ -1116,10 +1133,7 @@ function buildMonthlyChart(features) {
     });
 }
  
-/* ============================================================
-   8. BUSCADOR
-   ============================================================ */
- 
+// Buscador: activa la capa si estaba apagada y abre el elemento encontrado.
 document.getElementById('buscador').addEventListener('input', (event) => {
     const query = normalizeText(event.target.value);
     const feedback = document.getElementById('search-feedback');
@@ -1138,9 +1152,8 @@ document.getElementById('buscador').addEventListener('input', (event) => {
         return;
     }
  
-    feedback.textContent = match.type === 'territorio'
-        ? `Encontrado: ${match.item.name}`
-        : `Encontrado: ${match.projectName}`;
+    feedback.textContent =
+        `Encontrado: ${match.type === 'territorio' ? match.item.name : match.projectName}`;
  
     if (match.type === 'territorio') {
         if (!map.hasLayer(match.layer)) {
@@ -1153,25 +1166,19 @@ document.getElementById('buscador').addEventListener('input', (event) => {
             map.addLayer(match.category.layer);
         }
  
-        match.category.layer.zoomToShowLayer(
-            match.marker,
-            () => {
-                map.flyTo(
-                    match.marker.getLatLng(),
-                    15,
-                    { duration: 1.0 }
-                );
+        match.category.layer.zoomToShowLayer(match.marker, () => {
+            map.flyTo(
+                match.marker.getLatLng(),
+                15,
+                { duration: 1.0 }
+            );
  
-                match.marker.openPopup();
-            }
-        );
+            match.marker.openPopup();
+        });
     }
 });
  
-/* ============================================================
-   9. CARGA DE DATOS Y MENSAJES DE ERROR
-   ============================================================ */
- 
+// Carga separada: informa cuál GeoJSON falla si no se puede cargar.
 Promise.allSettled([
     loadTerritories(),
     loadProjects()
