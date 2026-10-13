@@ -5,35 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0f766e">
 <title>Geovisor REDD+ - Territorios y Proyectos</title>
-
-
-
-    <!-- Leaflet CSS -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
-<!-- MarkerCluster CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-
-
-
+ 
+    <!-- CSS de Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+ 
+    <!-- CSS para agrupación de proyectos -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+ 
     <!-- Estilos propios -->
 <link rel="stylesheet" href="style.css">
-
-
-
-    <!-- Chart.js para el gráfico de visitas -->
+ 
+    <!-- Gráfico mensual -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 <main id="app">
-<!-- Mapa -->
 <div id="map" aria-label="Mapa de territorios indígenas y proyectos visitados"></div>
-
-
-
-        <!-- Panel de indicadores -->
-<section id="kpi-panel" class="kpi-container" aria-label="Indicadores generales">
+ 
+    <section id="kpi-panel" class="kpi-container" aria-label="Indicadores generales">
 <div class="kpi-card">
 <span class="kpi-title">Territorios</span>
 <span id="kpi-territorios" class="kpi-value">0</span>
@@ -43,86 +33,65 @@
 <span id="kpi-visitas" class="kpi-value">0</span>
 </div>
 </section>
-
-
-
-        <!-- Buscador -->
-<div class="search-container">
-<input type="search" id="buscador" placeholder="🔍 Buscar territorio o proyecto..." autocomplete="off">
+ 
+    <div class="search-container">
+<label class="visually-hidden" for="buscador">Buscar territorio o proyecto</label>
+<input type="search" id="buscador"
+               placeholder="🔍 Buscar territorio o proyecto..."
+               autocomplete="off">
+<span id="search-feedback" aria-live="polite"></span>
 </div>
-
-
-
-        <!-- Selector de mapa base -->
-<div class="basemap-selector">
-<select id="select-basemap">
-<option value="carto" selected>Mapa claro (CARTO, recomendado)</option>
-<option value="osm">Mapa estándar (OpenStreetMap)</option>
-<option value="esri">Satélite (Esri)</option>
-</select>
-</div>
-
-
-
-        <!-- Gráfico -->
-<section class="stats-panel" aria-label="Estadística de visitas">
-<h2>Visitas por día</h2>
-<div class="chart-container">
-<canvas id="visitasChart" aria-label="Gráfico de visitas por fecha"></canvas>
-</div>
-</section>
-
-
-
-        <!-- Ficha del territorio seleccionado -->
+ 
+    <!-- Panel izquierdo: ficha y gráfico mensual debajo -->
+<div class="left-column">
 <aside class="sidebar" aria-label="Información del territorio seleccionado">
 <div class="header-territorio">
 <small>TERRITORIO SELECCIONADO</small>
 <h1 id="info-nombre">Haz clic en un territorio</h1>
-<div class="badges-programa">
+ 
+                <div class="badges-programa">
 <span id="badge-cref" class="tag-programa tag-inactive">CREF</span>
 <span id="badge-paft" class="tag-programa tag-inactive">PAFT</span>
 </div>
 </div>
-
-
-
+ 
             <div class="card-info">
 <span class="label-titulo">Decreto de creación</span>
 <span id="info-decreto" class="valor-destacado">—</span>
 </div>
-
-
-
+ 
             <div class="card-info">
 <span class="label-titulo">Bloque</span>
 <span id="info-bloque" class="valor-texto">—</span>
 </div>
-
-
-
+ 
             <div class="card-info desembolsos-box">
 <span class="label-titulo">Desembolsos REDD+</span>
-<div class="desembolsos-flex">
+ 
+                <div class="desembolsos-flex">
 <div class="desembolso-item">
 <small>1.er desembolso</small>
 <span id="info-des1">—</span>
 </div>
-<div class="divider-v" aria-hidden="true"></div>
-<div class="desembolso-item">
+ 
+                    <div class="divider-v" aria-hidden="true"></div>
+ 
+                    <div class="desembolso-item">
 <small>2.º desembolso</small>
 <span id="info-des2">—</span>
 </div>
 </div>
 </div>
-
-
-
+ 
             <div class="card-info">
 <span class="label-titulo">Área efectiva aprobada por año (ha)</span>
-<table class="tabla-anios">
+ 
+                <table class="tabla-anios">
 <thead>
-<tr><th scope="col">Año</th><th scope="col">Área (ha)</th></tr>
+<tr>
+<th scope="col">Año</th>
+<th scope="col">Área (ha)</th>
+</tr>
 </thead>
 <tbody>
 <tr><td>2017</td><td id="ae-2017">—</td></tr>
@@ -137,15 +106,42 @@
 </table>
 </div>
 </aside>
-
-
-
-        <div id="data-status" class="data-status" role="status" aria-live="polite">Cargando datos geográficos...</div>
+ 
+        <section class="stats-panel" aria-label="Estadística mensual de visitas">
+<div class="stats-heading">
+<h2>Visitas por mes</h2>
+<span id="chart-period">2025 en adelante</span>
+</div>
+ 
+            <div class="chart-container">
+<canvas id="visitasChart" aria-label="Gráfico de visitas por mes"></canvas>
+</div>
+ 
+            <p id="chart-empty" class="chart-empty" hidden>
+                No hay visitas con fechas válidas para el período seleccionado.
+</p>
+</section>
+</div>
+ 
+    <!-- Filtros del lado derecho -->
+<div class="right-controls">
+<div class="basemap-selector">
+<label class="visually-hidden" for="select-basemap">Mapa base</label>
+<select id="select-basemap">
+<option value="osm">Mapa estándar (OSM)</option>
+<option value="carto">Gris limpio (CartoDB)</option>
+<option value="esri">Satélite (Esri)</option>
+</select>
+</div>
+</div>
+ 
+    <div id="data-status" class="data-status"
+         role="status" aria-live="polite">
+        Cargando datos geográficos...
+</div>
 </main>
-
-
-
-    <!-- Scripts -->
+ 
+<!-- Leaflet se carga antes de su complemento y del script propio -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="script.js"></script>
