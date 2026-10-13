@@ -3,12 +3,12 @@
 
 
 /* ============================================================
-    GEOVISOR REDD+ â€” script.js
+    GEOVISOR REDD+ — script.js
     ============================================================ */
 
 
 
-// 1. InicializaciÃ³n del mapa y paneles
+// 1. Inicialización del mapa y paneles
  const map = L.map('map', {
      zoomControl: false,
      preferCanvas: false
@@ -29,14 +29,16 @@ map.createPane('panePuntos');
 
 // 2. Mapas base
  const basemaps = {
-     osm: L.tileLayer('https\://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }),
+     osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }),
      carto: L.tileLayer('https\://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 20, attribution: '&copy; CARTO' }),
      esri: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: '&copy; Esri' })
  };
 
 
 
-basemaps.osm.addTo(map);
+// CARTO se usa por defecto para evitar el bloqueo 403 de las teselas OSM en este entorno.
+basemaps.carto.addTo(map);
+document.getElementById('select-basemap').value = 'carto';
 
 
 
@@ -50,6 +52,25 @@ document.getElementById('select-basemap').addEventListener('change', (event) => 
  });
 
 
+
+// Paleta pastel diferenciada para los territorios indígenas.
+const COLORES_TERRITORIOS = [
+    '#A8DADC', '#F4C2C2', '#CDB4DB', '#BDE0FE', '#FFD6A5', '#CAFFBF',
+    '#FFC8DD', '#D8E2DC', '#E9EDC9', '#CDEAC0', '#B8C0FF', '#FAD2E1',
+    '#C3E0E5', '#F1C0E8', '#D0F4DE', '#FDE2A7', '#C9D6FF', '#E2CFC4',
+    '#D7E3FC', '#E4C1F9', '#C1FBA4', '#FFCFD2', '#B9FBC0', '#CFBAF0'
+];
+function colorTerritorio(indice) { return COLORES_TERRITORIOS[indice % COLORES_TERRITORIOS.length]; }
+function estiloNormalTerritorio(indice) {
+    const color = colorTerritorio(indice);
+    return { color: '#52616b', weight: 1.2, fillColor: color, fillOpacity: 0.68, pane: 'paneTerritorios' };
+}
+function estiloHoverTerritorio(indice) {
+    return { color: '#0f766e', weight: 3, fillColor: colorTerritorio(indice), fillOpacity: 0.88, pane: 'paneTerritorios' };
+}
+function estiloSeleccionadoTerritorio(indice) {
+    return { color: '#064e3b', weight: 3.5, fillColor: colorTerritorio(indice), fillOpacity: 0.88, pane: 'paneTerritorios' };
+}
 
 // 3. Estilos y variables
  const estiloNormal = { color: '#0f766e', weight: 1.5, fillColor: '#14b8a6', fillOpacity: 0.30, pane: 'paneTerritorios' };
@@ -67,25 +88,25 @@ const allLayersSearch = [];
 
 
 
-// Zoom a partir del cual los puntos pasan de un punto simple a su sÃ­mbolo
+// Zoom a partir del cual los puntos pasan de un punto simple a su símbolo
  const ZOOM_SIMBOLOS = 12;
 
 
 
-// Color y sÃ­mbolo por categorÃ­a de proyecto (las claves van sin tildes y en minÃºscula)
+// Color y símbolo por categoría de proyecto (las claves van sin tildes y en minúscula)
  const categoriasConfig = {
-     "infraestructura comunitaria y social": { color: "#2563eb", simbolo: "ðŸ˜ï¸" },
-     "infraestructura de servicios basicos": { color: "#dc2626", simbolo: "ðŸ’§" },
-     "educacion, cultura y juventud": { color: "#d97706", simbolo: "ðŸŽ“" },
-     "turismo sostenible y emprendimientos productivos": { color: "#16a34a", simbolo: "ðŸŒ¿" },
-     "seguridad, vigilancia y gestion ambiental": { color: "#9333ea", simbolo: "ðŸ›¡ï¸" },
-     "ayuda social y mejoramiento de infraestructura": { color: "#db2777", simbolo: "ðŸ¤" }
+     "infraestructura comunitaria y social": { color: "#2563eb", simbolo: "🏘️" },
+     "infraestructura de servicios basicos": { color: "#dc2626", simbolo: "💧" },
+     "educacion, cultura y juventud": { color: "#d97706", simbolo: "🎓" },
+     "turismo sostenible y emprendimientos productivos": { color: "#16a34a", simbolo: "🌿" },
+     "seguridad, vigilancia y gestion ambiental": { color: "#9333ea", simbolo: "🛡️" },
+     "ayuda social y mejoramiento de infraestructura": { color: "#db2777", simbolo: "🤝" }
  };
- const categoriaPorDefecto = { color: "#0f766e", simbolo: "ðŸ“" };
+ const categoriaPorDefecto = { color: "#0f766e", simbolo: "📍" };
 
 
 
-// 4. Helpers de formato y normalizaciÃ³n
+// 4. Helpers de formato y normalización
  function normalizeText(value) {
      return String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
  }
@@ -98,7 +119,7 @@ function getCategoriaConfig(nombre) {
 
 
 
-// Busca una propiedad ignorando mayÃºsculas y tildes en el nombre de la columna
+// Busca una propiedad ignorando mayúsculas y tildes en el nombre de la columna
  function getProp(props, ...nombres) {
      const claves = Object.keys(props || {});
      for (const nombre of nombres) {
@@ -117,7 +138,7 @@ function parseNumber(value) {
 
 
 
-    let raw = String(value).trim().replace(/CRC|USD|[â‚¡$\s]/gi, '');
+    let raw = String(value).trim().replace(/CRC|USD|[₡$\s]/gi, '');
      if (!raw) return null;
 
 
@@ -128,7 +149,7 @@ function parseNumber(value) {
 
 
     if (tienePunto && tieneComa) {
-         // El Ãºltimo separador es el decimal
+         // El último separador es el decimal
          if (raw.lastIndexOf(',') > raw.lastIndexOf('.')) {
              raw = raw.replace(/\./g, '').replace(',', '.');   // 1.234.567,89
          } else {
@@ -161,28 +182,22 @@ function formatNumber(value, decimals = 2) {
 
 
 function parseDate(value) {
-     if (!value) return null;
-     if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
-     if (typeof value === 'number') return value > 1e11 ? new Date(value) : null;
-     const raw = String(value).trim();
-    match = raw.match(/^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})(?:[T\s].*)?$/);
-     if (match) {
-         const year = Number(match[1]);
-         const month = Number(match[2]);
-         const day = Number(match[3]);
-         return new Date(year, month - 1, day);
-     }
-    match = raw.match(/^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})(?:[T\s].*)?$/);
-     if (match) {
-         const day = Number(match[1]);
-         const month = Number(match[2]);
-         const year = Number(match[3]);
-         return new Date(year, month - 1, day);
-     }
-     const parsed = new Date(raw);
-     return Number.isNaN(parsed.getTime()) ? null : parsed;
- }
-
+    if (!value) return null;
+    if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
+    if (typeof value === 'number') return value > 1e11 ? new Date(value) : null;
+    const raw = String(value).trim();
+    // Formato habitual de Costa Rica: dd/mm/aaaa o dd-mm-aaaa.
+    let match = raw.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})(?:[T\s].*)?$/);
+    if (match) {
+        const day = Number(match[1]);
+        const month = Number(match[2]);
+        const year = Number(match[3]);
+        const date = new Date(year, month - 1, day);
+        return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day ? date : null;
+    }
+    const parsed = new Date(raw);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
 
 
 function formatearFecha(value) {
@@ -235,7 +250,7 @@ function formatearFecha(value) {
 
 
 
-// 5. Formateador de desembolsos (monto en colones, monto en dÃ³lares y fecha)
+// 5. Formateador de desembolsos (monto en colones, monto en dólares y fecha)
  function formatearDesembolso(fecha, usd, crc) {
      const montoUSD = parseNumber(usd);
      const montoCRC = parseNumber(crc);
@@ -251,7 +266,7 @@ function formatearFecha(value) {
 
     let html = '';
      if (montoCRC !== null) {
-         html += `<strong style="color:#0f766e; font-size:0.9rem;">â‚¡${formatNumber(montoCRC, 2)}</strong><br>`;
+         html += `<strong style="color:#0f766e; font-size:0.9rem;">₡${formatNumber(montoCRC, 2)}</strong><br>`;
      }
      if (montoUSD !== null) {
          html += `<small style="color:#64748b;">$${formatNumber(montoUSD, 2)} USD</small><br>`;
@@ -267,7 +282,7 @@ function formatearFecha(value) {
 // 6. Control de capas agrupado (dos grupos desplegables)
  const controlCapas = L.control({ position: 'topright' });
  controlCapas.grupos = [
-     { id: 'territorios', titulo: 'Territorios IndÃ­genas', items: [] },
+     { id: 'territorios', titulo: 'Territorios Indígenas', items: [] },
      { id: 'proyectos', titulo: 'Proyectos Visitados', items: [] }
  ];
  const checkboxesPorCapa = new Map();
@@ -327,7 +342,7 @@ controlCapas.render = function () {
         const lista = L.DomUtil.create('div', 'capas-lista', details);
          if (!grupo.items.length) {
              const vacio = L.DomUtil.create('span', 'capas-vacio', lista);
-             vacio.textContent = 'Cargandoâ€¦';
+             vacio.textContent = 'Cargando…';
              return;
          }
 
@@ -386,17 +401,19 @@ controlCapas.addTo(map);
 
 
 
-// 7. Cargar Territorios IndÃ­genas
+// 7. Cargar Territorios Indígenas
  fetch('datos/territorios.geojson')
-     .then(res => res.json())
+     .then(res => { if (!res.ok) throw new Error(`No se pudo cargar datos/territorios.geojson (HTTP ${res.status})`); return res.json(); })
      .then(data => {
+         if (!data || !Array.isArray(data.features)) throw new Error('territorios.geojson no contiene una colección FeatureCollection válida.');
          document.getElementById('kpi-territorios').textContent = data.features.length;
 
 
 
         data.features.forEach((feature, indiceTerritorio) => {
              const props = feature.properties || {};
-             const nombreTerritorio = props.TERRITORIO || 'Territorio IndÃ­gena';
+             const nombreTerritorio = getProp(props, 'TERRITORIO', 'territorio', 'NOMBRE', 'nombre') || 'Territorio Indígena';
+             const colorActual = colorTerritorio(indiceTerritorio);
 
 
 
@@ -416,24 +433,26 @@ controlCapas.addTo(map);
 
 
 
-                            const clasif = (props.CLASIF || '').toUpperCase();
+                            const clasif = String(getProp(props, 'CLASIF', 'CLASIFICACION', 'CLASIFICACIÓN') || '').toUpperCase();
                              const badgeCref = document.getElementById('badge-cref');
                              const badgePaft = document.getElementById('badge-paft');
 
 
 
-                            badgeCref.textContent = 'CREF: ' + (clasif.includes('CREF') ? 'SÃ­' : 'No');
+                            badgeCref.textContent = 'CREF: ' + (clasif.includes('CREF') ? 'Sí' : 'No');
                              badgeCref.className = 'tag-programa ' + (clasif.includes('CREF') ? 'tag-active' : 'tag-inactive');
 
 
 
-                            badgePaft.textContent = 'PAFT: ' + (clasif.includes('PAFT') ? 'SÃ­' : 'No');
+                            badgePaft.textContent = 'PAFT: ' + (clasif.includes('PAFT') ? 'Sí' : 'No');
                              badgePaft.className = 'tag-programa ' + (clasif.includes('PAFT') ? 'tag-active' : 'tag-inactive');
 
 
 
-                            document.getElementById('info-decreto').textContent = props.DECRETO ? 'Decreto ' + props.DECRETO + (props.AÃ‘O ? ' (' + props.AÃ‘O + ')' : '') : 'No especificado';
-                             document.getElementById('info-bloque').textContent = props.BLOQUE || 'N/D';
+                            const decreto = getProp(props, 'DECRETO', 'DECRETO_CREACION', 'DECRETO DE CREACIÓN');
+                             const anioDecreto = getProp(props, 'AÑO', 'ANIO', 'ANNO');
+                             document.getElementById('info-decreto').textContent = decreto ? 'Decreto ' + decreto + (anioDecreto ? ' (' + anioDecreto + ')' : '') : 'No especificado';
+                             document.getElementById('info-bloque').textContent = getProp(props, 'BLOQUE') || 'N/D';
 
 
 
@@ -441,21 +460,22 @@ controlCapas.addTo(map);
                              // (si algo no aparece, revisa en la consola los nombres reales de las columnas)
                              console.debug('Propiedades del territorio:', props);
                              document.getElementById('info-des1').innerHTML = formatearDesembolso(
-                                 getProp(props, 'fec_desemb_1'),
-                                 getProp(props, 'monto_desemb_1_usd'),
-                                 getProp(props, 'monto_desemb_1_crc')
+                                 getProp(props, 'fec_desemb_1', 'fecha_desembolso_1', 'fecha 1er desembolso'),
+                                 getProp(props, 'monto_desemb_1_usd', 'desembolso_1_usd', 'monto primer desembolso usd'),
+                                 getProp(props, 'monto_desemb_1_crc', 'desembolso_1_crc', 'monto primer desembolso crc', 'monto primer desembolso colones')
                              );
                              document.getElementById('info-des2').innerHTML = formatearDesembolso(
-                                 getProp(props, 'fec_desemb_2'),
-                                 getProp(props, 'monto_desemb_2_usd'),
-                                 getProp(props, 'monto_desemb_2_crc')
+                                 getProp(props, 'fec_desemb_2', 'fecha_desembolso_2', 'fecha 2do desembolso'),
+                                 getProp(props, 'monto_desemb_2_usd', 'desembolso_2_usd', 'monto segundo desembolso usd'),
+                                 getProp(props, 'monto_desemb_2_crc', 'desembolso_2_crc', 'monto segundo desembolso crc', 'monto segundo desembolso colones')
                              );
 
 
 
                             [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024].forEach((year) => {
-                                 const val = props['AE_' + year];
-                                 document.getElementById('ae-' + year).textContent = (val !== undefined && val !== null && val !== '') ? val : 'â€”';
+                                 const val = getProp(props, 'AE_' + year, 'AREA_' + year, 'AREA_EFECTIVA_' + year, 'AREA EFECTIVA ' + year, 'AREA EFECTIVA APROBADA ' + year, 'AREA_APROBADA_' + year);
+                                 const formatted = formatNumber(val, 2);
+                                 document.getElementById('ae-' + year).textContent = formatted !== null ? formatted : '—';
                              });
 
 
@@ -492,13 +512,14 @@ controlCapas.addTo(map);
          document.getElementById('data-status').textContent = 'Datos cargados correctamente';
      })
      .catch(err => {
-         console.error(err);
-         document.getElementById('data-status').textContent = 'Error al cargar territorios.geojson';
+         console.error('Error cargando territorios:', err);
+         document.getElementById('data-status').textContent = 'Error al cargar territorios: ' + err.message + '. Revise la carpeta datos/ y ejecute con un servidor local.';
+         document.getElementById('data-status').classList.add('error');
      });
 
 
 
-// 8. GrÃ¡fico de visitas ordenado cronolÃ³gicamente por mes (desde 2025 en adelante)
+// 8. Gráfico de visitas ordenado cronológicamente por mes (desde 2025 en adelante)
  function construirGraficoVisitas(features) {
      const conteoMeses = new Map();
 
@@ -551,7 +572,7 @@ controlCapas.addTo(map);
 
 
 
-    const labels = sortedEntries.length ? sortedEntries.map((e) => e.label) : ['Sin fechas vÃ¡lidas'];
+    const labels = sortedEntries.length ? sortedEntries.map((e) => e.label) : ['Sin fechas válidas'];
      const values = sortedEntries.length ? sortedEntries.map((e) => e.count) : [0];
 
 
@@ -599,7 +620,7 @@ controlCapas.addTo(map);
 
 
 
-// 9. Iconos de proyectos: punto simple (zoom lejano) o sÃ­mbolo de categorÃ­a (zoom cercano)
+// 9. Iconos de proyectos: punto simple (zoom lejano) o símbolo de categoría (zoom cercano)
  function crearIcono(config, usarSimbolo) {
      if (usarSimbolo) {
          return L.divIcon({
@@ -641,18 +662,19 @@ map.on('zoomend', actualizarIconosProyectos);
 
 // 10. Cargar Puntos de Proyectos
  fetch('datos/puntos.geojson')
-     .then(res => res.json())
+     .then(res => { if (!res.ok) throw new Error(`No se pudo cargar datos/puntos.geojson (HTTP ${res.status})`); return res.json(); })
      .then(data => {
+         if (!data || !Array.isArray(data.features)) throw new Error('puntos.geojson no contiene una colección FeatureCollection válida.');
          document.getElementById('kpi-visitas').textContent = data.features.length;
 
 
 
-        // Construir grÃ¡fico optimizado por mes (2025 en adelante)
+        // Construir gráfico optimizado por mes (2025 en adelante)
          construirGraficoVisitas(data.features);
 
 
 
-        // Agrupar proyectos por categorÃ­a (sin distinguir mayÃºsculas ni tildes)
+        // Agrupar proyectos por categoría (sin distinguir mayúsculas ni tildes)
          const categoriasMap = {};
          data.features.forEach(feature => {
              const props = feature.properties || {};
@@ -689,9 +711,9 @@ map.on('zoomend', actualizarIconosProyectos);
                     const nombreProj = props['3_Nombre_de_Proyecto'] || 'Proyecto sin nombre';
                      const territorio = props['1_Territorio_Indgena'] || 'No especificado';
                      const comunidad = props['6_Comunidad_TI'] || 'N/D';
-                     const desc = props['4_Descripcin_de_proy'] || 'Sin descripciÃ³n.';
+                     const desc = props['4_Descripcin_de_proy'] || 'Sin descripción.';
                      const inversionNum = parseNumber(props['5_Inversin_CREF']);
-                     const inversion = inversionNum !== null ? 'â‚¡' + formatNumber(inversionNum, 2) : 'N/D';
+                     const inversion = inversionNum !== null ? '₡' + formatNumber(inversionNum, 2) : 'N/D';
                      const fecha = props['11_Fecha_de_visita'] || 'N/D';
                      const desembolso = props['8_Desembolso_CREF'] || 'N/D';
 
@@ -703,9 +725,9 @@ map.on('zoomend', actualizarIconosProyectos);
                              '<h3>' + nombreProj + '</h3>' +
                              '<p><strong>Territorio:</strong> ' + territorio + '</p>' +
                              '<p><strong>Comunidad:</strong> ' + comunidad + '</p>' +
-                             '<p><strong>ClasificaciÃ³n:</strong> ' + catName + '</p>' +
-                             '<p><strong>DescripciÃ³n:</strong> ' + desc + '</p>' +
-                             '<p><strong>InversiÃ³n CREF:</strong> ' + inversion + '</p>' +
+                             '<p><strong>Clasificación:</strong> ' + catName + '</p>' +
+                             '<p><strong>Descripción:</strong> ' + desc + '</p>' +
+                             '<p><strong>Inversión CREF:</strong> ' + inversion + '</p>' +
                              '<p><strong>Desembolso:</strong> ' + desembolso + '</p>' +
                              '<p><strong>Fecha de Visita:</strong> ' + fecha + '</p>' +
                          '</div>',
@@ -739,19 +761,20 @@ map.on('zoomend', actualizarIconosProyectos);
          controlCapas.render();
      })
      .catch(err => {
-         console.error(err);
+         console.error('Error cargando proyectos:', err);
+         document.getElementById('data-status').textContent = 'Territorios cargados; no se pudieron cargar los puntos/proyectos. Revise datos/puntos.geojson.';
      });
 
 
 
-// 11. Buscador rÃ¡pido
+// 11. Buscador rápido
  document.getElementById('buscador').addEventListener('input', (e) => {
-     const query = e.target.value.toLowerCase().trim();
+     const query = normalizeText(e.target.value);
      if (query.length < 2) return;
 
 
 
-    const match = allLayersSearch.find(item => item.name && item.name.toLowerCase().includes(query));
+    const match = allLayersSearch.find(item => item.name && normalizeText(item.name).includes(query));
      if (match) {
          // Si la capa estaba apagada en el control, se enciende para poder mostrarla
          if (match.grupo && !map.hasLayer(match.grupo)) map.addLayer(match.grupo);
