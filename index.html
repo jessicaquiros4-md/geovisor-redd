@@ -19,37 +19,59 @@
     <!-- Gráfico mensual -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+ 
 <body>
 <main id="app">
-<div id="map" aria-label="Mapa de territorios indígenas y proyectos visitados"></div>
  
-    <section id="kpi-panel" class="kpi-container" aria-label="Indicadores generales">
+    <div id="map" aria-label="Mapa de territorios indígenas y proyectos visitados"></div>
+ 
+    <!-- Indicadores -->
+<section id="kpi-panel" class="kpi-container" aria-label="Indicadores generales">
 <div class="kpi-card">
 <span class="kpi-title">Territorios</span>
 <span id="kpi-territorios" class="kpi-value">0</span>
 </div>
-<div class="kpi-card">
-<span class="kpi-title">Visitas / Proyectos</span>
+ 
+        <div class="kpi-card kpi-projects">
+<span class="kpi-title">Proyectos visitados</span>
 <span id="kpi-visitas" class="kpi-value">0</span>
 </div>
 </section>
  
-    <div class="search-container">
-<label class="visually-hidden" for="buscador">Buscar territorio o proyecto</label>
-<input type="search" id="buscador" placeholder="🔍 Buscar territorio o proyecto..." autocomplete="off">
-<span id="search-feedback" aria-live="polite"></span>
+    <!-- Buscador -->
+<div class="search-container">
+<label class="visually-hidden" for="buscador">
+            Buscar territorio o proyecto
+</label>
+ 
+        <input
+            type="search"
+            id="buscador"
+            placeholder="🔍 Buscar territorio o proyecto..."
+            autocomplete="off"
+>
+ 
+        <span id="search-feedback" aria-live="polite"></span>
 </div>
  
-    <!-- Panel izquierdo: ficha y gráfico mensual -->
+    <!-- Panel izquierdo: información del territorio y gráfico -->
 <div class="left-column">
-<aside class="sidebar" aria-label="Información del territorio seleccionado">
-<div class="header-territorio">
+ 
+        <aside class="sidebar" aria-label="Información del territorio seleccionado">
+ 
+            <div class="header-territorio">
 <small>TERRITORIO SELECCIONADO</small>
-<h1 id="info-nombre">Haz clic en un territorio</h1>
+ 
+                <h1 id="info-nombre">Haz clic en un territorio</h1>
  
                 <div class="badges-programa">
-<span id="badge-cref" class="tag-programa tag-inactive">CREF</span>
-<span id="badge-paft" class="tag-programa tag-inactive">PAFT</span>
+<span id="badge-cref" class="tag-programa tag-inactive">
+                        CREF
+</span>
+ 
+                    <span id="badge-paft" class="tag-programa tag-inactive">
+                        PAFT
+</span>
 </div>
 </div>
  
@@ -82,7 +104,9 @@
 </div>
  
             <div class="card-info">
-<span class="label-titulo">Área efectiva aprobada por año (ha)</span>
+<span class="label-titulo">
+                    Área efectiva aprobada por año (ha)
+</span>
  
                 <table class="tabla-anios">
 <thead>
@@ -91,7 +115,8 @@
 <th scope="col">Área (ha)</th>
 </tr>
 </thead>
-<tbody>
+ 
+                    <tbody>
 <tr><td>2017</td><td id="ae-2017">—</td></tr>
 <tr><td>2018</td><td id="ae-2018">—</td></tr>
 <tr><td>2019</td><td id="ae-2019">—</td></tr>
@@ -103,29 +128,57 @@
 </tbody>
 </table>
 </div>
-</aside>
  
-        <section class="stats-panel" aria-label="Estadística mensual de visitas">
-<div class="stats-heading">
-<h2>Visitas por mes</h2>
-<span id="chart-period">2025 en adelante</span>
+        </aside>
+ 
+        <!-- Gráfico de proyectos visitados -->
+<section class="stats-panel" aria-label="Proyectos visitados por mes">
+ 
+            <div class="stats-heading">
+<h2>
+<span class="chart-heading-icon" aria-hidden="true">🌱</span>
+                    Proyectos visitados por mes
+</h2>
+ 
+                <span id="chart-period">Desde 2025</span>
 </div>
  
+            <p class="chart-subtitle">
+                Actividad registrada según la fecha de visita.
+</p>
+ 
             <div class="chart-container">
-<canvas id="visitasChart" aria-label="Gráfico de visitas por mes"></canvas>
+<canvas
+                    id="visitasChart"
+                    aria-label="Gráfico de proyectos visitados por mes">
+</canvas>
 </div>
  
             <p id="chart-empty" class="chart-empty" hidden>
-                No hay visitas con fechas válidas para el período seleccionado.
+                No hay proyectos con fechas de visita válidas para el período seleccionado.
 </p>
-</section>
+ 
+            <p class="chart-footnote">
+<span class="chart-note-icon" aria-hidden="true">💡</span>
+ 
+                <span>
+<strong>Para interpretar el dato:</strong>
+                    el conteo representa proyectos visitados, no giras realizadas.
+                    Una misma gira puede incluir varios proyectos y territorios.
+</span>
+</p>
+ 
+        </section>
 </div>
  
     <!-- Selector de mapa base -->
 <div class="right-controls">
 <div class="basemap-selector">
-<label class="visually-hidden" for="select-basemap">Mapa base</label>
-<select id="select-basemap">
+<label class="visually-hidden" for="select-basemap">
+                Mapa base
+</label>
+ 
+            <select id="select-basemap">
 <option value="osm">Mapa estándar (OSM)</option>
 <option value="carto">Gris limpio (CartoDB)</option>
 <option value="esri">Satélite (Esri)</option>
@@ -133,14 +186,17 @@
 </div>
 </div>
  
-    <div id="data-status" class="data-status" role="status" aria-live="polite">
+    <!-- Mensaje de carga -->
+<div id="data-status" class="data-status" role="status" aria-live="polite">
         Cargando datos geográficos...
 </div>
+ 
 </main>
  
 <!-- JavaScript: Leaflet antes de MarkerCluster y script.js -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="script.js"></script>
+ 
 </body>
 </html>
